@@ -1,0 +1,10 @@
+TMRpcm	KEYWORD1
+play	KEYWORD2
+stopPlayback	KEYWORD2
+volume	KEYWORD2
+disable	KEYWORD2
+pause	KEYWORD2
+wavInfo	KEYWORD2
+speakerPin	KEYWORD2
+pwmMode	KEYWORD2
+isPlaying	KEYWORD2
