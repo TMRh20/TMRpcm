@@ -1,3 +1,26 @@
+
+
+*************
+*************
+
 Arduino library for asynchronous playback of PCM/WAV files direct from SD card
 
+Supported: WAV Format, 8-bit, 8 to 20khz Sample Rate, Mono
+
+Requires SD library and SD card
+
+*************
+*************
+
+
+Also included is optional add-on for RF streaming of PCM/WAV files using
+NRF24l01+ radio modules.
+
+RF Streaming requires library: http://maniacbug.github.com/RF24/index.html
+
+See README in RF_AddOn folder for more details
+
+
+*************
 Details at tmrh20.blogspot.com
+*************

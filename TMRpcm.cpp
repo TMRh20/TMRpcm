@@ -1,9 +1,14 @@
-/*Library by TMRh20 2012*/
+/*Library by TMRh20 2012
+  Released into the public domain.*/
 
-#include <SD.h>
-#include <Arduino.h>
+
+
+
+ #include <SD.h>
+
+//#include <Arduino.h>
 #include <TMRpcm.h>
-
+//#include <pcmRF.h>
 
 
 
@@ -20,6 +25,7 @@ volatile boolean srX15 = false;
 volatile boolean r12Toggle = false;
 boolean paused = 0;
 boolean playing = 0;
+
 
 int volMod = 3;
 
@@ -57,6 +63,11 @@ void TMRpcm::play(char* filename){
   }else{Serial.println("failed to open music file"); }
 
 }
+
+
+
+
+
 
 
 void TMRpcm::pause(){
@@ -109,7 +120,23 @@ boolean TMRpcm::wavInfo(char* filename){
 }
 
 
+void buffSD(){
+	if(sFile.available() < buffSize){
+	        playing = 0;
+	        if(sFile){sFile.close();}
+	        TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
+	  }
 
+	  if(buffEmpty[0]){
+	    for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
+	    buffEmpty[0] = 0;
+	  }else
+	  if(buffEmpty[1]){
+	    for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
+	    buffEmpty[1] = 0;
+  }
+
+}
 
 ISR(TIMER1_CAPT_vect){
 
@@ -122,20 +149,7 @@ ISR(TIMER1_CAPT_vect){
  //Now enable global interupts before this interrupt is finished, so the music can interrupt the buffering
   sei();
 
-  if(sFile.available() < buffSize){
-        playing = 0;
-        if(sFile){sFile.close();}
-        TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  }
-
-  if(buffEmpty[0]){
-    for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
-    buffEmpty[0] = 0;
-  }else
-  if(buffEmpty[1]){
-    for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
-    buffEmpty[1] = 0;
-  }
+  buffSD();
 
   if(paused){TIMSK1 = _BV(ICIE1); TIMSK1 &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
@@ -145,6 +159,11 @@ ISR(TIMER1_CAPT_vect){
   }
 
 }
+
+
+
+
+
 
 
 ISR(TIMER1_OVF_vect){
@@ -234,3 +253,4 @@ void TMRpcm::disable(){
 boolean TMRpcm::isPlaying(){
 	return playing;
 }
+
