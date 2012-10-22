@@ -13,7 +13,7 @@ Requires SD library and SD card
 *************
 
 
-Also included is optional add-on for RF streaming of PCM/WAV files using
+Also included is optional proof-of-concept add-on for RF streaming of PCM/WAV files using
 NRF24l01+ radio modules.
 
 RF Streaming requires library: http://maniacbug.github.com/RF24/index.html
