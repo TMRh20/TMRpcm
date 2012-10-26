@@ -6,7 +6,7 @@
 #ifndef TMRpcm_h   // if x.h hasn't been included yet...
 #define TMRpcm_h   //   #define this so the compiler knows it has been included
 
-#include <RF24.h>
+//#include <RF24.h>
 
 class TMRpcm
 {
