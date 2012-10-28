@@ -78,8 +78,8 @@ void TMRpcm::pause(){
 
 void TMRpcm::volume(int upDown){
   switch(upDown){
-    case 1: volMod++; volMod = constrain(volMod, 0, volModMax); break;
-    case 0: volMod--; volMod = constrain(volMod, 0, volModMax); break;
+    case 1: volMod++; volMod = constrain(volMod, 1, volModMax); break;
+    case 0: volMod--; volMod = constrain(volMod, 1, volModMax); break;
   }
 }
 
@@ -212,8 +212,8 @@ void TMRpcm::startPlayback(){
    unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
    volModMax = (resolution * 1.5) / 248 ; //no more than 75% PWM duty cycle
    if(volMod > volModMax){ volMod = volModMax; }
-   //volMod = volModMax-1;
-   volMod = 1;
+   volMod = volModMax-1;
+   //volMod = 1;
    noInterrupts();
    ICR1 = resolution;
    OCR1A = 1;
