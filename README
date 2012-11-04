@@ -7,7 +7,15 @@ Arduino library for asynchronous playback of PCM/WAV files direct from SD card
 
 Supported: WAV Format, 8-bit, 8 to 20khz Sample Rate, Mono
 
-Requires SD library and SD card
+Requires SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
+
+Files can be converted using iTunes as follows:
+
+a: Click Edit > Preferences > Import Settings
+b: Change the dropdown to WAV Encoder and Setting: Custom > 16.000kHz, 8-bit, Mono
+c: Right click any file in iTunes, and select "Create WAV Version"
+d: Copy file to SD card using computer 
+
 
 *************
 *************
