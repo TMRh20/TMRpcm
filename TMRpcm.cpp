@@ -42,7 +42,7 @@ TMRpcm::TMRpcm(){
 void TMRpcm::play(char* filename){
 
   pinMode(speakerPin, OUTPUT);
-  stopPlayback(); paused = 0;
+  stopPlayback();
   Serial.print("Playing: ");Serial.println(filename);
 
   if(!wavInfo(filename) ){ return; }//verify its a valid wav file
@@ -63,10 +63,6 @@ void TMRpcm::play(char* filename){
   }else{Serial.println("failed to open music file"); }
 
 }
-
-
-
-
 
 
 
@@ -121,20 +117,7 @@ boolean TMRpcm::wavInfo(char* filename){
 
 
 void buffSD(){
-	if(sFile.available() < buffSize){
-	        playing = 0;
-	        if(sFile){sFile.close();}
-	        TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
-	  }
 
-	  if(buffEmpty[0]){
-	    for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
-	    buffEmpty[0] = 0;
-	  }else
-	  if(buffEmpty[1]){
-	    for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
-	    buffEmpty[1] = 0;
-  }
 
 }
 
@@ -149,7 +132,20 @@ ISR(TIMER1_CAPT_vect){
  //Now enable global interupts before this interrupt is finished, so the music can interrupt the buffering
   sei();
 
-  buffSD();
+  if(sFile.available() < buffSize){
+  	playing = 0;
+    if(sFile){sFile.close();}
+  	  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
+    }
+
+    if(buffEmpty[0]){
+  	  for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
+      buffEmpty[0] = 0;
+    }else
+    if(buffEmpty[1]){
+  	  for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
+      buffEmpty[1] = 0;
+    }
 
   if(paused){TIMSK1 = _BV(ICIE1); TIMSK1 &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
@@ -162,46 +158,25 @@ ISR(TIMER1_CAPT_vect){
 
 
 
-
-
-
-
 ISR(TIMER1_OVF_vect){
 
   ++loadCounter;
-  if(volMod == 0){OCR1A = 1; buffCount++;}
-  else
-  if(srX2){ if(loadCounter == 4){ loadCounter = 0; OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++; }
-    }else
-    if(srX15){ int tmp;
-      if(r12Toggle){tmp=4;}else{tmp=2;}
-        if(loadCounter == tmp){
-          loadCounter = 0;
-          r12Toggle = !r12Toggle;
-          OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++;
-        }
-    }else{ if(loadCounter == 2){ loadCounter = 0; OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++; }} //normal operation
+  if(volMod == 0){
+	  OCR1A = 1; buffCount++;
+  }else{
+	  if(loadCounter == 2){ loadCounter = 0; OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++; }
+  } //normal operation
 
-    if(buffCount >= buffSize){
-
+  if(buffCount >= buffSize){
       buffCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
-
-    }
-
-   if(buffCount == buffSize){
-     buffCount = 0; whichBuff = !whichBuff;
-     buffEmpty[!whichBuff] = true;
-   }
+  }
 }
 
 
 void TMRpcm::startPlayback(){
   playing = 1;
-
-  if(SAMPLE_RATE <= 10000){SAMPLE_RATE = SAMPLE_RATE*2; srX2 = true;}else{srX2 = false;}
-  if(SAMPLE_RATE > 10000 && SAMPLE_RATE < 13250){SAMPLE_RATE = SAMPLE_RATE*1.5; srX15 = true;}else{srX15 = false;}
 
 //  unsigned int resolution = (8 * (1000000/SAMPLE_RATE)); //FastPWM mode only counts up, so we get higher resolution
    unsigned int modeMultiplier = 0;
