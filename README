@@ -1,48 +1,48 @@
 
 
-***
+************************************************************************************
 
 
-* Arduino library for asynchronous playback of PCM/WAV files direct from SD card
+Arduino library for asynchronous playback of PCM/WAV files direct from SD card
 
-* Requires SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
+Requires SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
 
-***
+************************************************************************************
 
-##Features
+Features
 
-* **PCM/WAV playback direct from SD card**
+- PCM/WAV playback direct from SD card
 
-* **Asynchronous Playback: Completely interrupt driven. Allows main loop to execute instructions while playback occurs.**
+- Asynchronous Playback: Allows code in main loop to run while audio playback occurs.
 
-* **Playback uses a single timer (Timer 1)**
+- Playback uses a single timer (Timer 1)
 
-* **Supported formats: WAV files, 8-bit, 8-20khz Sample Rate, mono**
+- Supported formats: WAV files, 8-bit, 8-20khz Sample Rate, mono
 
-* **Supported devices: Arduino Uno, Nano, Mega, etc.**
+- Supported devices: Arduino Uno, Nano, Mega, etc.
 
-* **Files easily converted using iTunes or other software:**
+- Files easily converted using iTunes or other software:
 
- **iTunes Conversion:**  
+  iTunes Conversion:  
     Click _> Edit > Preferences > Import Settings_  
     Change the dropdown to _WAV Encoder_ and Setting: _Custom > 16.000kHz, 8-bit, Mono_  
     Right click any file in iTunes, and select _"Create WAV Version"_  
     Copy file to SD card using computer   
     
-***
+************************************************************************************
 
-##Functions
+Usage:
+ TMRpcm audio;
+ audio.play("filename"); plays a file
+ audio.speakerPin = 11; set to 11 for Mega, 9 for Uno, Nano, etc
+ audio.disable(); disables the timer on output pin and stops the music
+ audio.stopPlayback(); stops the music, but leaves the timer running
+ audio.isPlaying();  returns 1 if music playing, 0 if not
+ audio.pause();  pauses/unpauses playback
+ audio.pwmMode = 1; set to 1 for phase/frequency correct mode, 0 for fast pwm
+ audio.volume(0); CHANGED from prev version, now uses either a 1(up) or 0(down)
 
-* **play("filename");** plays a file
-* **speakerPin = 11;** set to 11 for Mega, 9 for Uno, Nano, etc
-* **disable();** disables the timer on output pin and stops the music
-* **stopPlayback();** stops the music, but leaves the timer running
-* **isPlaying();**  returns 1 if music playing, 0 if not
-* **pause();**  pauses/unpauses playback
-* **pwmMode = 1;** set to 1 for phase/frequency correct mode, 0 for fast pwm
-* **volume(0);** CHANGED from prev version, now uses either a 1(up) or 0(down)
-
-***
+************************************************************************************
     
 
 Also included is optional proof-of-concept add-on for RF streaming of PCM/WAV files using
@@ -53,6 +53,6 @@ RF Streaming requires library: http://maniacbug.github.com/RF24/index.html
 See README in RF_AddOn folder for more details
 
 
-***
+******************************
 Details at tmrh20.blogspot.com
-***
+******************************
