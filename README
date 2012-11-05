@@ -1,25 +1,49 @@
 
 
-*************
-*************
-
-Arduino library for asynchronous playback of PCM/WAV files direct from SD card
-
-Supported: WAV Format, 8-bit, 8 to 20khz Sample Rate, Mono
-
-Requires SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
-
-Files can be converted using iTunes as follows:
-
-a: Click Edit > Preferences > Import Settings
-b: Change the dropdown to WAV Encoder and Setting: Custom > 16.000kHz, 8-bit, Mono
-c: Right click any file in iTunes, and select "Create WAV Version"
-d: Copy file to SD card using computer 
+***
 
 
-*************
-*************
+* Arduino library for asynchronous playback of PCM/WAV files direct from SD card
 
+* Requires SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
+
+***
+
+##Features
+
+* **PCM/WAV playback direct from SD card**
+
+* **Asynchronous Playback: Completely interrupt driven. Allows main loop to execute instructions while playback occurs.**
+
+* **Playback uses a single timer (Timer 1)**
+
+* **Supported formats: WAV files, 8-bit, 8-20khz Sample Rate, mono**
+
+* **Supported devices: Arduino Uno, Nano, Mega, etc.**
+
+* **Files easily converted using iTunes or other software:**
+
+ **iTunes Conversion:**  
+    Click _> Edit > Preferences > Import Settings_  
+    Change the dropdown to _WAV Encoder_ and Setting: _Custom > 16.000kHz, 8-bit, Mono_  
+    Right click any file in iTunes, and select _"Create WAV Version"_  
+    Copy file to SD card using computer   
+    
+***
+
+##Functions
+
+* **play("filename");** plays a file
+* **speakerPin = 11;** set to 11 for Mega, 9 for Uno, Nano, etc
+* **disable();** disables the timer on output pin and stops the music
+* **stopPlayback();** stops the music, but leaves the timer running
+* **isPlaying();**  returns 1 if music playing, 0 if not
+* **pause();**  pauses/unpauses playback
+* **pwmMode = 1;** set to 1 for phase/frequency correct mode, 0 for fast pwm
+* **volume(0);** CHANGED from prev version, now uses either a 1(up) or 0(down)
+
+***
+    
 
 Also included is optional proof-of-concept add-on for RF streaming of PCM/WAV files using
 NRF24l01+ radio modules.
@@ -29,6 +53,6 @@ RF Streaming requires library: http://maniacbug.github.com/RF24/index.html
 See README in RF_AddOn folder for more details
 
 
-*************
+***
 Details at tmrh20.blogspot.com
-*************
+***
