@@ -20,13 +20,8 @@ volatile boolean whichBuff = false;
 volatile int buffCount = 0;
 volatile int volModMax = 1;
 volatile int loadCounter = 0;
-volatile boolean srX2 = false;
-volatile boolean srX15 = false;
-volatile boolean r12Toggle = false;
 boolean paused = 0;
 boolean playing = 0;
-
-
 int volMod = 3;
 
 File sFile;
@@ -176,31 +171,26 @@ ISR(TIMER1_OVF_vect){
 
 
 void TMRpcm::startPlayback(){
-  playing = 1;
 
-//  unsigned int resolution = (8 * (1000000/SAMPLE_RATE)); //FastPWM mode only counts up, so we get higher resolution
+   playing = 1;
    unsigned int modeMultiplier = 0;
-   boolean pMode = 1;
-   if(pMode){modeMultiplier = 8;}else{modeMultiplier = 4;}
+   if(pwmMode){modeMultiplier = 8;}else{modeMultiplier = 4;}
 
-   //int test = 4 * (1000000/SAMPLE_RATE);
    unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
    volModMax = (resolution * 1.5) / 248 ; //no more than 75% PWM duty cycle
    if(volMod > volModMax){ volMod = volModMax; }
    volMod = volModMax-1;
-   //volMod = 1;
    noInterrupts();
    ICR1 = resolution;
    OCR1A = 1;
 
-   if(pMode){
+   if(pwmMode){
      TCCR1A = _BV(WGM11) | _BV(COM1A1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
      TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
    }else{
      TCCR1A = _BV(COM1A1);
      TCCR1B = _BV(WGM13) | _BV(CS10);
    }
-   //TIMSK1 &= ~_BV(OCIE1A);
    TIMSK1 = ( _BV(ICIE1) | _BV(TOIE1) );
    interrupts();
 
