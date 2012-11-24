@@ -131,16 +131,16 @@ ISR(TIMER1_CAPT_vect){
   	playing = 0;
     if(sFile){sFile.close();}
   	  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
-    }
+  }else
 
-    if(buffEmpty[0]){
-  	  for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
-      buffEmpty[0] = 0;
-    }else
-    if(buffEmpty[1]){
-  	  for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
-      buffEmpty[1] = 0;
-    }
+  if(buffEmpty[0]){
+  	for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
+    buffEmpty[0] = 0;
+  }else
+  if(buffEmpty[1]){
+  	for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
+    buffEmpty[1] = 0;
+  }
 
   if(paused){TIMSK1 = _BV(ICIE1); TIMSK1 &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
@@ -156,11 +156,7 @@ ISR(TIMER1_CAPT_vect){
 ISR(TIMER1_OVF_vect){
 
   ++loadCounter;
-  if(volMod == 0){
-	  OCR1A = 1; buffCount++;
-  }else{
-	  if(loadCounter == 2){ loadCounter = 0; OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++; }
-  } //normal operation
+  if(loadCounter == 2){ loadCounter = 0; OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++; }
 
   if(buffCount >= buffSize){
       buffCount = 0;

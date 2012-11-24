@@ -13,5 +13,7 @@ To enable:
 3. Open up and run the two example files in streamingExamples folder
 
 
+The transmitter/streamer was tested using an Arduino Mega, and uses interrupt 5 (Pin 18) connected to the radio module interrupt pin.
+
 
 Details at tmrh20.blogspot.com
