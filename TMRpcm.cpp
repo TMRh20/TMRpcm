@@ -174,8 +174,8 @@ void TMRpcm::startPlayback(){
 
    unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
    volModMax = (resolution * 1.5) / 248 ; //no more than 75% PWM duty cycle
-   if(volMod > volModMax){ volMod = volModMax; }
-   volMod = volModMax-1;
+   volMod = constrain(volModMax-1,1,20);
+
    noInterrupts();
    ICR1 = resolution;
    OCR1A = 1;
