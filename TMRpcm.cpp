@@ -131,6 +131,7 @@ ISR(TIMER1_CAPT_vect){
   	playing = 0;
     if(sFile){sFile.close();}
   	  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
+  	  OCR1A = 10;
   }else
 
   if(buffEmpty[0]){
@@ -142,7 +143,7 @@ ISR(TIMER1_CAPT_vect){
     buffEmpty[1] = 0;
   }
 
-  if(paused){TIMSK1 = _BV(ICIE1); TIMSK1 &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
+  if(paused){TIMSK1 = _BV(ICIE1); OCR1A = 10; TIMSK1 &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
   if(playing){
   //re-enable this interrupt vector and the overflow vector
@@ -173,7 +174,7 @@ void TMRpcm::startPlayback(){
    if(pwmMode){modeMultiplier = 8;}else{modeMultiplier = 4;}
 
    unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
-   volModMax = (resolution * 1.5) / 248 ; //no more than 75% PWM duty cycle
+   volModMax = (resolution ) / 248 ;
    volMod = constrain(volModMax-1,1,20);
 
    noInterrupts();
@@ -199,6 +200,7 @@ void TMRpcm::stopPlayback(){
   playing = 0;
   if(sFile){sFile.close();}
   TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
+  OCR1A = 10;
 
 }
 
