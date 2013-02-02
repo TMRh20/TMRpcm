@@ -43,7 +43,10 @@ Usage:
  audio.volume(0); CHANGED from prev version, now uses either a 1(up) or 0(down)
 
 ************************************************************************************
-    
+
+HowTo: http://maxoffsky.com/maxoffsky-blog/how-to-play-wav-audio-files-with-arduino-uno-and-microsd-card/
+
+************************************************************************************
 
 Also included is optional proof-of-concept add-on for RF streaming of PCM/WAV files using
 NRF24l01+ radio modules.
