@@ -10,7 +10,9 @@ unsigned long time = 0;
 void setup(){
 
   tmrpcm.speakerPin = 9; //5,6,11 or 46 on Mega, 9 on Uno, Nano, etc
-
+  //Complimentary Output or Dual Speakers:
+  //pinMode(10,OUTPUT); Pin pairs: 9,10 Mega: 5-2,6-7,11-12,46-45 
+  
   Serial.begin(115200);
   pinMode(13,OUTPUT); //LED Connected to analog pin 0
   if (!SD.begin(SD_ChipSelectPin)) {  // see if the card is present and can be initialized:

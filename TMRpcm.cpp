@@ -14,7 +14,7 @@ volatile int volModMax = 1;
 volatile int loadCounter = 0;
 boolean paused = 0;
 boolean playing = 0;
-int volMod = 3;
+int volMod = 2;
 
 int tt=0;
 
@@ -24,6 +24,7 @@ int tt=0;
 	volatile uint8_t *TCCRnA[4] = {&TCCR1A,&TCCR3A,&TCCR4A,&TCCR5A};
 	volatile uint8_t *TCCRnB[4] = {&TCCR1B, &TCCR3B,&TCCR4B,&TCCR5B};
 	volatile unsigned int *OCRnA[4] = {&OCR1A, &OCR3A,&OCR4A,&OCR5A};
+	volatile unsigned int *OCRnB[4] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
 	volatile unsigned int *ICRn[4]	= {&ICR1, &ICR3,&ICR4,&ICR5};
 
 	ISR_ALIAS(TIMER3_OVF_vect, TIMER1_OVF_vect);
@@ -37,6 +38,7 @@ int tt=0;
 	volatile uint8_t *TCCRnA[1] = {&TCCR1A};
 	volatile uint8_t *TCCRnB[1] = {&TCCR1B};
 	volatile unsigned int *OCRnA[1] = {&OCR1A};
+	volatile unsigned int *OCRnB[1] = {&OCR1B};
 	volatile unsigned int *ICRn[1]	= {&ICR1};
 #endif
 
@@ -55,25 +57,14 @@ void TMRpcm::setPin(){
 
 	disable();
 	pinMode(speakerPin,OUTPUT);
+
 	switch(speakerPin){
-		case 11: tt=0;//use TIMER1
-				 break;
-
-		case 5: tt=1; //use TIMER3
-				break;
-
-		case 6: tt=2; //use TIMER4
-				break;
-
-		case 46:tt=3; //use TIMER5
-				break;
-
-		default:tt=0; //useTIMER1 as default
-				 break;
+		case 11: tt=0; break; //use TIMER1
+		case 5: tt=1; break; //use TIMER3
+		case 6: tt=2; break;//use TIMER4
+		case 46:tt=3; break;//use TIMER5
+		default:tt=0; break; //useTIMER1 as default
 	}
-
-
-
 }
 
 
@@ -112,8 +103,10 @@ void TMRpcm::pause(){
 
 void TMRpcm::volume(int upDown){
   switch(upDown){
-    case 1: volMod++; volMod = constrain(volMod, 1, volModMax); break;
-    case 0: volMod--; volMod = constrain(volMod, 1, volModMax); break;
+    case 1: volMod++; volMod = constrain(volMod, 1, volModMax);
+    		break;
+    case 0: volMod--; volMod = constrain(volMod, 1, volModMax);
+    		break;
   }
 }
 
@@ -153,7 +146,7 @@ boolean TMRpcm::wavInfo(char* filename){
    xFile.close(); return 1;
 }
 
-
+volatile unsigned int resolution = 500;
 
 ISR(TIMER1_CAPT_vect){
 
@@ -177,7 +170,7 @@ ISR(TIMER1_CAPT_vect){
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 	  	sei();
-	  	for(int i=0; i<buffSize; i++){ buffer[a][i] = sFile.read(); }
+	  	for(int i=0; i<buffSize; i++){ buffer[a][i] = sFile.read();	}
 	    buffEmpty[a] = 0;
 	}
   }
@@ -195,8 +188,13 @@ ISR(TIMER1_CAPT_vect){
 ISR(TIMER1_OVF_vect){
 
   ++loadCounter;
-  if(loadCounter == 2){ loadCounter = 0; *OCRnA[tt] = buffer[whichBuff][buffCount] * volMod; buffCount++; }
-
+  if(loadCounter > 1){
+	  loadCounter = 0;
+	  unsigned int oo = min(buffer[whichBuff][buffCount]*volMod,resolution);
+	  *OCRnA[tt] = oo;
+	  *OCRnB[tt] = oo;
+	  buffCount++;
+  }
   if(buffCount >= buffSize){
       buffCount = 0;
       buffEmpty[whichBuff] = true;
@@ -213,19 +211,20 @@ void TMRpcm::startPlayback(){
    unsigned int modeMultiplier = 0;
    if(pwmMode){modeMultiplier = 8;}else{modeMultiplier = 4;}
 
-   unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
-   volModMax = (resolution ) / 248 ;
+   resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
+   volModMax = (resolution*1.5) / 248 ;
    volMod = constrain(volModMax-1,1,20);
 
    noInterrupts();
    *ICRn[tt] = resolution;
    *OCRnA[tt] = 1;
+   *OCRnB[tt] = 1;
 
    if(pwmMode){
-     *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+     *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
      *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
    }else{
-     *TCCRnA[tt] = _BV(COM1A1);
+     *TCCRnA[tt] = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1);
      *TCCRnB[tt] = _BV(WGM13) | _BV(CS10);
    }
    *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
@@ -248,7 +247,7 @@ void TMRpcm::disable(){
   playing = 0;
   if(sFile){sFile.close();}
   *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  *TCCRnB[tt] &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));
+  *TCCRnB[tt] &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12) );
 
 }
 
