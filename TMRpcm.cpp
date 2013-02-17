@@ -1,19 +1,11 @@
-/*Library by TMRh20 2012
-  Released into the public domain.*/
+/*Library by TMRh20 2012-2013*/
 
-
-
-
- #include <SD.h>
-
-//#include <Arduino.h>
+#include <SD.h>
 #include <TMRpcm.h>
-//#include <pcmRF.h>
 
 
 
 const int buffSize = 150; //note: there are 2 sound buffers. This will require (soundBuff*2) memory free
-
 volatile byte buffer[2][buffSize+1];
 volatile boolean buffEmpty[2] = {false,false};
 volatile boolean whichBuff = false;
@@ -24,19 +16,70 @@ boolean paused = 0;
 boolean playing = 0;
 int volMod = 3;
 
+int tt=0;
+
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+	volatile uint8_t *TIMSK[4] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
+	volatile uint8_t *TCCRnA[4] = {&TCCR1A,&TCCR3A,&TCCR4A,&TCCR5A};
+	volatile uint8_t *TCCRnB[4] = {&TCCR1B, &TCCR3B,&TCCR4B,&TCCR5B};
+	volatile unsigned int *OCRnA[4] = {&OCR1A, &OCR3A,&OCR4A,&OCR5A};
+	volatile unsigned int *ICRn[4]	= {&ICR1, &ICR3,&ICR4,&ICR5};
+
+	ISR_ALIAS(TIMER3_OVF_vect, TIMER1_OVF_vect);
+	ISR_ALIAS(TIMER3_CAPT_vect, TIMER1_CAPT_vect);
+	ISR_ALIAS(TIMER4_OVF_vect, TIMER1_OVF_vect);
+	ISR_ALIAS(TIMER4_CAPT_vect, TIMER1_CAPT_vect);
+	ISR_ALIAS(TIMER5_OVF_vect, TIMER1_OVF_vect);
+	ISR_ALIAS(TIMER5_CAPT_vect, TIMER1_CAPT_vect);
+#else
+	volatile uint8_t *TIMSK[1] = {&TIMSK1};
+	volatile uint8_t *TCCRnA[1] = {&TCCR1A};
+	volatile uint8_t *TCCRnB[1] = {&TCCR1B};
+	volatile unsigned int *OCRnA[1] = {&OCR1A};
+	volatile unsigned int *ICRn[1]	= {&ICR1};
+#endif
+
+
 File sFile;
 
 
 TMRpcm::TMRpcm(){
-	speakerPin = 11;
 	SAMPLE_RATE = 16000;
 	pwmMode = 1;
+	speakerPin=11;
+}
+
+
+void TMRpcm::setPin(){
+
+	disable();
+	pinMode(speakerPin,OUTPUT);
+	switch(speakerPin){
+		case 11: tt=0;//use TIMER1
+				 break;
+
+		case 5: tt=1; //use TIMER3
+				break;
+
+		case 6: tt=2; //use TIMER4
+				break;
+
+		case 46:tt=3; //use TIMER5
+				break;
+
+		default:tt=0; //useTIMER1 as default
+				 break;
+	}
+
+
+
 }
 
 
 void TMRpcm::play(char* filename){
 
-  pinMode(speakerPin, OUTPUT);
+  if(speakerPin != lastSpeakPin){ setPin(); }
   stopPlayback();
   Serial.print("Playing: ");Serial.println(filename);
 
@@ -111,10 +154,6 @@ boolean TMRpcm::wavInfo(char* filename){
 }
 
 
-void buffSD(){
-
-
-}
 
 ISR(TIMER1_CAPT_vect){
 
@@ -122,34 +161,33 @@ ISR(TIMER1_CAPT_vect){
   // This allows this interrupt vector (COMPB) to continue loading data while allowing the overflow interrupt
   // to interrupt it. ( Nested Interrupts )
 
-   TIMSK1 &= ~_BV(ICIE1);
+  // TIMSK1 &= ~_BV(ICIE1);
 
  //Now enable global interupts before this interrupt is finished, so the music can interrupt the buffering
-  sei();
+  //sei();
 
   if(sFile.available() < buffSize){
   	playing = 0;
     if(sFile){sFile.close();}
-  	  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  	  OCR1A = 10;
+  	  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+  	  *OCRnA[tt] = 10;
   }else
 
-  if(buffEmpty[0]){
-  	for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
-    buffEmpty[0] = 0;
-  }else
-  if(buffEmpty[1]){
-  	for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read();  }
-    buffEmpty[1] = 0;
+  for(int a=0; a<2; a++){
+	  if(buffEmpty[a]){
+		*TIMSK[tt] &= ~(_BV(ICIE1));
+	  	sei();
+	  	for(int i=0; i<buffSize; i++){ buffer[a][i] = sFile.read(); }
+	    buffEmpty[a] = 0;
+	}
   }
 
-  if(paused){TIMSK1 = _BV(ICIE1); OCR1A = 10; TIMSK1 &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
+  if(paused){*TIMSK[tt] = _BV(ICIE1); *OCRnA[tt] = 10; *TIMSK[tt] &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
   if(playing){
   //re-enable this interrupt vector and the overflow vector
-  TIMSK1 = ( _BV(ICIE1) | _BV(TOIE1) );
+  *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
   }
-
 }
 
 
@@ -157,13 +195,15 @@ ISR(TIMER1_CAPT_vect){
 ISR(TIMER1_OVF_vect){
 
   ++loadCounter;
-  if(loadCounter == 2){ loadCounter = 0; OCR1A = buffer[whichBuff][buffCount] * volMod; buffCount++; }
+  if(loadCounter == 2){ loadCounter = 0; *OCRnA[tt] = buffer[whichBuff][buffCount] * volMod; buffCount++; }
 
   if(buffCount >= buffSize){
       buffCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
+
   }
+
 }
 
 
@@ -178,20 +218,20 @@ void TMRpcm::startPlayback(){
    volMod = constrain(volModMax-1,1,20);
 
    noInterrupts();
-   ICR1 = resolution;
-   OCR1A = 1;
+   *ICRn[tt] = resolution;
+   *OCRnA[tt] = 1;
 
    if(pwmMode){
-     TCCR1A = _BV(WGM11) | _BV(COM1A1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
-     TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
+     *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+     *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
    }else{
-     TCCR1A = _BV(COM1A1);
-     TCCR1B = _BV(WGM13) | _BV(CS10);
+     *TCCRnA[tt] = _BV(COM1A1);
+     *TCCRnB[tt] = _BV(WGM13) | _BV(CS10);
    }
-   TIMSK1 = ( _BV(ICIE1) | _BV(TOIE1) );
+   *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
    interrupts();
 
-   }
+}
 
 
 
@@ -199,16 +239,16 @@ void TMRpcm::startPlayback(){
 void TMRpcm::stopPlayback(){
   playing = 0;
   if(sFile){sFile.close();}
-  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  OCR1A = 10;
+  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+  *OCRnA[tt] = 10;
 
 }
 
 void TMRpcm::disable(){
   playing = 0;
   if(sFile){sFile.close();}
-  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  TCCR1B &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));
+  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+  *TCCRnB[tt] &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12));
 
 }
 

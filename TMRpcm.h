@@ -1,12 +1,8 @@
-/*Library by TMRh20
-  Released into the public domain.*/
-//#include <Arduino.h>
+/*Library by TMRh20 2012-2013*/
 
 
 #ifndef TMRpcm_h   // if x.h hasn't been included yet...
 #define TMRpcm_h   //   #define this so the compiler knows it has been included
-
-//#include <RF24.h>
 
 class TMRpcm
 {
@@ -17,8 +13,8 @@ class TMRpcm
 	void volume(int vol);
 	void disable();
 	void pause();
-	boolean wavInfo(char* filename);
 	int speakerPin;
+	boolean wavInfo(char* filename);
 	boolean pwmMode;
 	boolean isPlaying();
 	boolean rfPlaying;
@@ -27,11 +23,11 @@ class TMRpcm
 
  private:
  	void startPlayback();
-
-
-
+	int lastSpeakPin;
+	void setPin();
 };
 
-void buffSD();
+
+
 
 #endif
