@@ -7,7 +7,6 @@
 class TMRpcm
 {
  public:
-	TMRpcm();
 	void play(char* filename);
 	void stopPlayback();
 	void volume(int vol);
@@ -22,7 +21,6 @@ class TMRpcm
 
 
  private:
- 	void startPlayback();
 	int lastSpeakPin;
 	void setPin();
 };
