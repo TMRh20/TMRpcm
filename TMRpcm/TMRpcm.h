@@ -17,14 +17,13 @@ class TMRpcm
 	boolean pwmMode;
 	boolean isPlaying();
 	boolean rfPlaying;
-	unsigned long SAMPLE_RATE;
+	unsigned int SAMPLE_RATE;
 
 
  private:
 	int lastSpeakPin;
 	void setPin();
 };
-
 
 
 

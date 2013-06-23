@@ -3,11 +3,12 @@
 #include <SD.h>
 #include <TMRpcm.h>
 
-const int buffSize = 150; //note: there are 2 sound buffers. This will require (soundBuff*2) memory free
-volatile byte buffer[2][buffSize+1];
-volatile boolean buffEmpty[2] = {false,false}, whichBuff = false;
-volatile unsigned int buffCount = 0,  loadCounter=0;
-unsigned int volModMax = 1,volMod=2, tt=0;
+const int buffSize = 100; //note: there are 2 sound buffers. This will require (soundBuff*4) memory free
+volatile unsigned int buffer[2][buffSize+1];
+
+volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0;
+volatile unsigned int buffCount = 0;
+unsigned int volModMax = 1,tt=0, volMod=2;
 boolean paused = 0, playing = 0;
 volatile unsigned int resolution = 500;
 
@@ -61,16 +62,24 @@ void TMRpcm::play(char* filename){
   sFile = SD.open(filename);
 
   if(sFile){
-	playing = 1;
+	playing = 1; paused = 0;
     sFile.seek(44); //skip the header info
+
+
+	if(SAMPLE_RATE > 22050 ){ SAMPLE_RATE = 18000; Serial.print(" SampleRate Too High: ");}
+
+
+    if(pwmMode){resolution = 8;}else{resolution = 4; if(SAMPLE_RATE > 15000){ resolution = 8; pwmMode = 1;} }
+    resolution = resolution * (1000000/SAMPLE_RATE);
+
+    //bufempty 1 = buffer to load, whichbuff = playback buffer
     for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
-    whichBuff = false; buffEmpty[0] = false; buffEmpty[1] = true;
+    for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read(); }
+    whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
-
-    if(pwmMode){resolution = 8;}else{resolution = 4;}
-    resolution = resolution * (1000000/SAMPLE_RATE); //Serial.println(resolution);
     volModMax = (resolution*1.5) / 248 ;
     volMod = constrain(volMod, 1, volModMax);
+
     noInterrupts();
     *ICRn[tt] = resolution;
     *OCRnA[tt] = *OCRnB[tt] = 1;
@@ -112,31 +121,23 @@ boolean TMRpcm::wavInfo(char* filename){
   //check for the string WAVE starting at 8th bit in header file
   File xFile = SD.open(filename);
   if(!xFile){return 0;}
-  xFile.seek(8); String wavStr = "";
-    for(int i=0; i<4; i++){ wavStr += char(xFile.read()); }
-    if(!wavStr.equalsIgnoreCase("WAVE") ){
-      Serial.println("Not a WAV file");
-      xFile.close(); return 0;
-    }
+  xFile.seek(8);
+  char wavStr[] = {'W','A','V','E'};
+  for (int i =0; i<4; i++){
+	  if(xFile.read() != wavStr[i]){ Serial.println("Not a WAV file"); xFile.close(); return 0; }
+  }
 
-    //make sure the Sample rate is below 22000
     xFile.seek(24);
     unsigned int dVar = xFile.read();
     dVar = xFile.read() << 8 | dVar; //read 8bit values into 16-bit integer
-    if(dVar > 22000){
-      Serial.print(" SampleRate Too High: ");
-      SAMPLE_RATE = 22000;
-    }else{
-    SAMPLE_RATE = dVar; // Set the sample rate according to the file
-    }
+   	SAMPLE_RATE = dVar; // Set the sample rate according to the file
 
     //verify that Bits Per Sample is 8 (0-255)
     xFile.seek(34); dVar = xFile.read();
     dVar = xFile.read() << 8 | dVar;
     if(dVar != 8){Serial.print("Wrong BitRate"); xFile.close(); return 0;}
-   xFile.close(); return 1;
+    xFile.close(); return 1;
 }
-
 
 
 ISR(TIMER1_CAPT_vect){
@@ -144,10 +145,8 @@ ISR(TIMER1_CAPT_vect){
   // The first step is to disable this interrupt before manually enabling global interrupts.
   // This allows this interrupt vector (COMPB) to continue loading data while allowing the overflow interrupt
   // to interrupt it. ( Nested Interrupts )
-
   // TIMSK1 &= ~_BV(ICIE1);
-
- //Now enable global interupts before this interrupt is finished, so the music can interrupt the buffering
+ //Then enable global interupts before this interrupt is finished, so the music can interrupt the buffering
   //sei();
 
   if(sFile.available() < buffSize){
@@ -161,35 +160,35 @@ ISR(TIMER1_CAPT_vect){
   for(int a=0; a<2; a++){
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
-	  	sei();
-	  	for(int i=0; i<buffSize; i++){ buffer[a][i] = sFile.read();	}
-	    buffEmpty[a] = 0;
-	}
+		sei();
+		unsigned int tmp;
+		for(int i=0; i<buffSize; i++){ tmp = (sFile.read() * volMod); buffer[a][i] = min(tmp,resolution); 	}
+		buffEmpty[a] = 0;
+	  }
   }
 
-  if(paused){*TIMSK[tt] = _BV(ICIE1); *OCRnA[tt] = 10; *OCRnB[tt] = resolution-10; *TIMSK[tt] &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
+  if(paused){*OCRnA[tt] = 10; *OCRnB[tt] = resolution-10; *TIMSK[tt] &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
-  if(playing){
-  //re-enable this interrupt vector and the overflow vector
-  *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
+  if( playing ){
+		  *TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
+
   }
+
 }
 
 
 ISR(TIMER1_OVF_vect){
 
-  ++loadCounter;
-  if(loadCounter == 1){ return; }
+  loadCounter = !loadCounter;
+  if(loadCounter == 0){ return; }
 
-  loadCounter = 0;
-  *OCRnA[tt] = *OCRnB[tt] = min(buffer[whichBuff][buffCount]*volMod,resolution);
+  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount];
   buffCount++;
 
   if(buffCount >= buffSize){
       buffCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
-
   }
 
 }

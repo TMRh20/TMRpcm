@@ -15,7 +15,7 @@ Features
 
 - Asynchronous Playback: Allows code in main loop to run while audio playback occurs.
 
-- Playback uses a single timer (Timer 1)
+- Playback uses a single timer: Timer 1 (Uno,Mega) or Timer 3,4 or 5 (Mega)
 
 - Supported formats: WAV files, 8-bit, 8-20khz Sample Rate, mono
 
@@ -46,10 +46,6 @@ Usage:
 
 ************************************************************************************
 
-HowTo: http://maxoffsky.com/maxoffsky-blog/how-to-play-wav-audio-files-with-arduino-uno-and-microsd-card/
-
-************************************************************************************
-
 Also included is optional proof-of-concept add-on for RF streaming of PCM/WAV files using
 NRF24l01+ radio modules.
 
@@ -59,5 +55,18 @@ See README in RF_AddOn folder for more details
 
 
 ******************************
-Details at tmrh20.blogspot.com
+Details at http://tmrh20.blogspot.com
 ******************************
+
+Contributed HowTo: http://maxoffsky.com/maxoffsky-blog/how-to-play-wav-audio-files-with-arduino-uno-and-microsd-card/
+
+************************************************************************************
+
+Known Limitations:
+
+- This library is very processor intensive, so code execution during playback will be slower than normal
+- Processing load can be reduced by using lower quality sounds encoded at a lower sample rate (8khz minimum)
+- May interfere with other libraries that rely on interrupts. The isPlaying() function can be used to
+  prevent parallel code execution.
+
+************************************************************************************
