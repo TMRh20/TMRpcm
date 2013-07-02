@@ -4,13 +4,11 @@
 #include <TMRpcm.h>
 
 const int buffSize = 100; //note: there are 2 sound buffers. This will require (soundBuff*4) memory free
-volatile unsigned int buffer[2][buffSize+1];
-
-volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0;
-volatile unsigned int buffCount = 0;
-unsigned int volModMax = 1,tt=0, volMod=2;
-boolean paused = 0, playing = 0;
-volatile unsigned int resolution = 500;
+volatile unsigned int buffer[2][buffSize+1], buffCount = 0, resolution = 500;
+volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
+unsigned int tt=0;
+int volMod=0;
+boolean paused = 0;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
@@ -65,32 +63,27 @@ void TMRpcm::play(char* filename){
 	playing = 1; paused = 0;
     sFile.seek(44); //skip the header info
 
+	if(SAMPLE_RATE > 22050 ){ SAMPLE_RATE = 18000; Serial.print("SampleRate Too High");}
 
-	if(SAMPLE_RATE > 22050 ){ SAMPLE_RATE = 18000; Serial.print(" SampleRate Too High: ");}
+    resolution = 8 * (1000000/SAMPLE_RATE);
 
-
-    if(pwmMode){resolution = 8;}else{resolution = 4; if(SAMPLE_RATE > 15000){ resolution = 8; pwmMode = 1;} }
-    resolution = resolution * (1000000/SAMPLE_RATE);
-
-    //bufempty 1 = buffer to load, whichbuff = playback buffer
-    for(int i=0; i<buffSize; i++){ buffer[0][i] = sFile.read(); }
-    for(int i=0; i<buffSize; i++){ buffer[1][i] = sFile.read(); }
+    for(int i=0; i<buffSize; i++){ buffer[0][i] = i,buffSize; }
+    for(int i=0; i<buffSize; i++){ buffer[1][i] = i+buffSize;  }
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
-
-    volModMax = (resolution*1.5) / 248 ;
-    volMod = constrain(volMod, 1, volModMax);
 
     noInterrupts();
     *ICRn[tt] = resolution;
     *OCRnA[tt] = *OCRnB[tt] = 1;
-    if(pwmMode){
+//    if(pwmMode){
       *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
       *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
-    }else{
-      *TCCRnA[tt] = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1);
-      *TCCRnB[tt] = _BV(WGM13) | _BV(CS10);
-    }
-    *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
+//    }
+//    else{
+//      *TCCRnA[tt] = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1);
+//      *TCCRnB[tt] = _BV(WGM13) | _BV(CS10);
+//    }
+
+   *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
     interrupts();
 
 
@@ -108,9 +101,9 @@ void TMRpcm::pause(){
 void TMRpcm::volume(int upDown){
 
   if(upDown){
-	  volMod++; volMod = constrain(volMod, 1, volModMax);
+	  volMod++; volMod = min(volMod,3);
   }else{
-	  volMod--; volMod = constrain(volMod, 1, volModMax);
+	  volMod--; volMod = max(volMod, -4);
   }
 
 }
@@ -124,16 +117,15 @@ boolean TMRpcm::wavInfo(char* filename){
   xFile.seek(8);
   char wavStr[] = {'W','A','V','E'};
   for (int i =0; i<4; i++){
-	  if(xFile.read() != wavStr[i]){ Serial.println("Not a WAV file"); xFile.close(); return 0; }
+	  if(xFile.read() != wavStr[i]){ Serial.println("WAV File Error"); break; }
   }
 
     xFile.seek(24);
-    unsigned int dVar = xFile.read();
-    dVar = xFile.read() << 8 | dVar; //read 8bit values into 16-bit integer
-   	SAMPLE_RATE = dVar; // Set the sample rate according to the file
+    SAMPLE_RATE = xFile.read();
+    SAMPLE_RATE = xFile.read() << 8 | SAMPLE_RATE;
 
     //verify that Bits Per Sample is 8 (0-255)
-    xFile.seek(34); dVar = xFile.read();
+    xFile.seek(34); unsigned int dVar = xFile.read();
     dVar = xFile.read() << 8 | dVar;
     if(dVar != 8){Serial.print("Wrong BitRate"); xFile.close(); return 0;}
     xFile.close(); return 1;
@@ -142,6 +134,7 @@ boolean TMRpcm::wavInfo(char* filename){
 
 ISR(TIMER1_CAPT_vect){
 
+
   // The first step is to disable this interrupt before manually enabling global interrupts.
   // This allows this interrupt vector (COMPB) to continue loading data while allowing the overflow interrupt
   // to interrupt it. ( Nested Interrupts )
@@ -149,12 +142,13 @@ ISR(TIMER1_CAPT_vect){
  //Then enable global interupts before this interrupt is finished, so the music can interrupt the buffering
   //sei();
 
-  if(sFile.available() < buffSize){
+  if(sFile.available() <= buffSize){
+    buffCount = 0;
   	playing = 0;
     if(sFile){sFile.close();}
   	  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  	  *OCRnA[tt] = 10;
-	  *OCRnB[tt] = resolution-10;
+ 	  *OCRnA[tt] = 10;
+      *OCRnB[tt] = resolution-10;
   }else
 
   for(int a=0; a<2; a++){
@@ -162,7 +156,9 @@ ISR(TIMER1_CAPT_vect){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 		sei();
 		unsigned int tmp;
-		for(int i=0; i<buffSize; i++){ tmp = (sFile.read() * volMod); buffer[a][i] = min(tmp,resolution); 	}
+		if(volMod < 0 ){ for(int i=0; i<buffSize; i++){ tmp = (sFile.read() >> volMod*-1); buffer[a][i] = min(tmp,resolution); 	} }
+		else
+		for(int i=0; i<buffSize; i++){ tmp = (sFile.read() << volMod); buffer[a][i] = min(tmp,resolution); 	}
 		buffEmpty[a] = 0;
 	  }
   }

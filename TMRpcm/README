@@ -41,8 +41,8 @@ Usage:
  audio.stopPlayback(); stops the music, but leaves the timer running
  audio.isPlaying();  returns 1 if music playing, 0 if not
  audio.pause();  pauses/unpauses playback
- audio.pwmMode = 1; set to 1 for phase/frequency correct mode, 0 for fast pwm
- audio.volume(0); CHANGED from prev version, now uses either a 1(up) or 0(down)
+ REMOVED audio.pwmMode = 1; Now uses only fast pwm
+ audio.volume(0); 1(up) or 0(down) NEW: Using bitshift for wider range of volume control
 
 ************************************************************************************
 
@@ -54,12 +54,10 @@ RF Streaming requires library: http://maniacbug.github.com/RF24/index.html
 See README in RF_AddOn folder for more details
 
 
-******************************
+************************************************************************************
 Details at http://tmrh20.blogspot.com
-******************************
-
+************************************************************************************
 Contributed HowTo: http://maxoffsky.com/maxoffsky-blog/how-to-play-wav-audio-files-with-arduino-uno-and-microsd-card/
-
 ************************************************************************************
 
 Known Limitations:
@@ -68,5 +66,6 @@ Known Limitations:
 - Processing load can be reduced by using lower quality sounds encoded at a lower sample rate (8khz minimum)
 - May interfere with other libraries that rely on interrupts. The isPlaying() function can be used to
   prevent parallel code execution.
-
+- Update to volume control allows greater range in low volume control, but will distort
+  if volume too high
 ************************************************************************************
