@@ -48,7 +48,6 @@ void loop(){
     case 't': tmrpcm.play("catfish"); break;
     case 'p': tmrpcm.pause(); break;
     case '?': if(tmrpcm.isPlaying()){ Serial.println("A wav file is being played");} break;
-    case 'm': tmrpcm.pwmMode = !tmrpcm.pwmMode; break;
     case 'S': tmrpcm.stopPlayback(); break;
     case '=': tmrpcm.volume(1); break;
     case '-': tmrpcm.volume(0); break;
