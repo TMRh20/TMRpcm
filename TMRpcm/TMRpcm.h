@@ -12,9 +12,9 @@ class TMRpcm
 	void volume(int vol);
 	void disable();
 	void pause();
+	void quality(boolean q);
 	int speakerPin;
 	boolean wavInfo(char* filename);
-	//boolean pwmMode;
 	boolean isPlaying();
 	boolean rfPlaying;
 	unsigned int SAMPLE_RATE;

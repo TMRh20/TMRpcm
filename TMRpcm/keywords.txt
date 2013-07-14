@@ -6,5 +6,5 @@ disable	KEYWORD2
 pause	KEYWORD2
 wavInfo	KEYWORD2
 speakerPin	KEYWORD2
-pwmMode	KEYWORD2
+quality	KEYWORD2
 isPlaying	KEYWORD2

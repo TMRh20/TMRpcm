@@ -51,6 +51,8 @@ void loop(){
     case 'S': tmrpcm.stopPlayback(); break;
     case '=': tmrpcm.volume(1); break;
     case '-': tmrpcm.volume(0); break;
+    case '0': tmrpcm.quality(0); break;
+    case '1': tmrpcm.quality(1); break;
     default: break;
     }
   }

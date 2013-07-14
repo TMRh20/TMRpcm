@@ -9,6 +9,7 @@ volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0,
 unsigned int tt=0;
 int volMod=0;
 boolean paused = 0;
+boolean qual = 1;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
@@ -49,6 +50,9 @@ void TMRpcm::setPin(){
 	}
 }
 
+void TMRpcm::quality(boolean q){
+	if(!playing){qual = q;}
+}
 
 void TMRpcm::play(char* filename){
 
@@ -65,9 +69,12 @@ void TMRpcm::play(char* filename){
 
 	if(SAMPLE_RATE > 22050 ){ SAMPLE_RATE = 18000; Serial.print("SampleRate Too High");}
 
-    resolution = 8 * (1000000/SAMPLE_RATE);
 
-    for(int i=0; i<buffSize; i++){ buffer[0][i] = i,buffSize; }
+    if(qual){resolution = 8 * (1000000/SAMPLE_RATE);}
+    else{ resolution = 16 * (1000000/SAMPLE_RATE);
+	}
+
+    for(int i=0; i<buffSize; i++){ buffer[0][i] = i; }
     for(int i=0; i<buffSize; i++){ buffer[1][i] = i+buffSize;  }
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
@@ -111,7 +118,7 @@ void TMRpcm::volume(int upDown){
 
 boolean TMRpcm::wavInfo(char* filename){
 
-  //check for the string WAVE starting at 8th bit in header file
+  //check for the string WAVE starting at 8th bit in header of file
   File xFile = SD.open(filename);
   if(!xFile){return 0;}
   xFile.seek(8);
@@ -146,9 +153,9 @@ ISR(TIMER1_CAPT_vect){
     buffCount = 0;
   	playing = 0;
     if(sFile){sFile.close();}
-  	  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
- 	  *OCRnA[tt] = 10;
-      *OCRnB[tt] = resolution-10;
+	  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+      *OCRnA[tt] = 1;
+      *OCRnB[tt] = 1;
   }else
 
   for(int a=0; a<2; a++){
@@ -163,7 +170,7 @@ ISR(TIMER1_CAPT_vect){
 	  }
   }
 
-  if(paused){*OCRnA[tt] = 10; *OCRnB[tt] = resolution-10; *TIMSK[tt] &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
+  if(paused){*OCRnA[tt] = *OCRnB[tt] = 1; *TIMSK[tt] &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
   else
   if( playing ){
 		  *TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
@@ -176,7 +183,7 @@ ISR(TIMER1_CAPT_vect){
 ISR(TIMER1_OVF_vect){
 
   loadCounter = !loadCounter;
-  if(loadCounter == 0){ return; }
+  if(loadCounter == 0 && qual){ return; }
 
   *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount];
   buffCount++;
@@ -194,8 +201,8 @@ void TMRpcm::stopPlayback(){
   playing = 0;
   if(sFile){sFile.close();}
   *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  *OCRnA[tt] = 10;
-  *OCRnB[tt] = resolution-10;
+  *OCRnA[tt] = 1;
+  *OCRnB[tt] = 1;
 
 }
 
