@@ -3,13 +3,12 @@
 #include <SD.h>
 #include <TMRpcm.h>
 
-const int buffSize = 100; //note: there are 2 sound buffers. This will require (soundBuff*4) memory free
+const int buffSize = 75; //note: there are 2 sound buffers. This will require (soundBuff*4) memory free
 volatile unsigned int buffer[2][buffSize+1], buffCount = 0, resolution = 500;
 volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
 unsigned int tt=0;
 int volMod=0;
-boolean paused = 0;
-boolean qual = 1;
+boolean paused = 0, qual = 1;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
@@ -19,12 +18,16 @@ boolean qual = 1;
 	volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
 	volatile unsigned int *ICRn[]	= {&ICR1, &ICR3,&ICR4,&ICR5};
 
-	ISR_ALIAS(TIMER3_OVF_vect, TIMER1_OVF_vect);
-	ISR_ALIAS(TIMER3_CAPT_vect, TIMER1_CAPT_vect);
-	ISR_ALIAS(TIMER4_OVF_vect, TIMER1_OVF_vect);
-	ISR_ALIAS(TIMER4_CAPT_vect, TIMER1_CAPT_vect);
-	ISR_ALIAS(TIMER5_OVF_vect, TIMER1_OVF_vect);
-	ISR_ALIAS(TIMER5_CAPT_vect, TIMER1_CAPT_vect);
+	ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+	ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+	ISR(TIMER4_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+	ISR(TIMER4_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+	ISR(TIMER5_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+	ISR(TIMER5_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+
 #else
 	volatile byte *TIMSK[] = {&TIMSK1};
 	volatile byte *TCCRnA[] = {&TCCR1A};
@@ -82,6 +85,7 @@ void TMRpcm::play(char* filename){
     *ICRn[tt] = resolution;
     *OCRnA[tt] = *OCRnB[tt] = 1;
 //    if(pwmMode){
+	  *TCCRnA[tt] = *TCCRnB[tt] = 0;
       *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
       *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
 //    }
@@ -183,7 +187,7 @@ ISR(TIMER1_CAPT_vect){
 ISR(TIMER1_OVF_vect){
 
   loadCounter = !loadCounter;
-  if(loadCounter == 0 && qual){ return; }
+  if(loadCounter == 0 && qual == 1){ return; }
 
   *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount];
   buffCount++;
@@ -211,6 +215,7 @@ void TMRpcm::disable(){
   if(sFile){sFile.close();}
   *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
   *TCCRnB[tt] &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12) );
+  *TCCRnA[tt] = *TCCRnB[tt] = 0;
 
 }
 
