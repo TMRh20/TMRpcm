@@ -77,8 +77,16 @@ void TMRpcm::play(char* filename){
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
 
-    for(int i=0; i<buffSize; i++){ buffer[0][i] = i; }
-    for(int i=0; i<buffSize; i++){ buffer[1][i] = i+buffSize;  }
+	unsigned int tmp = 0;
+	if(volMod < 0 ){
+		tmp = (sFile.read() >> volMod*-1);
+	}else{
+		tmp = (sFile.read() << volMod);
+	}
+	unsigned int mod = 0;
+
+    for(int i=0; i<buffSize; i++){ mod = mod+1; buffer[0][i] = min(mod,tmp); }
+    for(int i=0; i<buffSize; i++){ mod = mod+1; buffer[1][i] = min(mod,tmp); }
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
     noInterrupts();
