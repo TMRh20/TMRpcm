@@ -8,7 +8,7 @@ volatile unsigned int buffer[2][buffSize+1], buffCount = 0, resolution = 500;
 volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
 unsigned int tt=0;
 int volMod=0;
-boolean paused = 0, qual = 1;
+boolean paused = 0, qual = 1, stopPlay = 0;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
@@ -60,9 +60,8 @@ void TMRpcm::quality(boolean q){
 void TMRpcm::play(char* filename){
 
   if(speakerPin != lastSpeakPin){ setPin(); lastSpeakPin=speakerPin;}
-  stopPlayback();
+  if(playing){stopPlay=1; while(playing){} }
 
-  if(sFile){sFile.close();}
   if(!wavInfo(filename) ){ return; }//verify its a valid wav file
   sFile = SD.open(filename);
 
@@ -77,24 +76,29 @@ void TMRpcm::play(char* filename){
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
 
-    for(int i=0; i<buffSize; i++){ buffer[0][i] = i; }
-    for(int i=0; i<buffSize; i++){ buffer[1][i] = i+buffSize;  }
+	unsigned int tmp = 0;
+	if(volMod < 0 ){
+		tmp = (sFile.read() >> volMod*-1);
+	}else{
+		tmp = (sFile.read() << volMod);
+	}
+
+	unsigned int mod = *OCRnA[tt];
+
+	if(tmp > mod){
+	    for(int i=0; i<buffSize; i++){ mod = mod+3; mod = min(mod,tmp); buffer[0][i] = mod;}
+	    for(int i=0; i<buffSize; i++){ mod = mod+3; mod = min(mod,tmp); buffer[1][i] = mod; }
+	}else{
+	    for(int i=0; i<buffSize; i++){ mod = mod-3; mod = max(mod,tmp); buffer[0][i] = mod; }
+	    for(int i=0; i<buffSize; i++){ mod = mod-3; mod = max(mod,tmp); buffer[1][i] = mod; }
+	}
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
     noInterrupts();
     *ICRn[tt] = resolution;
-    *OCRnA[tt] = *OCRnB[tt] = 1;
-//    if(pwmMode){
-	  *TCCRnA[tt] = *TCCRnB[tt] = 0;
-      *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
-      *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
-//    }
-//    else{
-//      *TCCRnA[tt] = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1);
-//      *TCCRnB[tt] = _BV(WGM13) | _BV(CS10);
-//    }
-
-   *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
+    *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+    *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
+    *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
     interrupts();
 
 
@@ -153,14 +157,6 @@ ISR(TIMER1_CAPT_vect){
  //Then enable global interupts before this interrupt is finished, so the music can interrupt the buffering
   //sei();
 
-  if(sFile.available() <= buffSize){
-    buffCount = 0;
-  	playing = 0;
-    if(sFile){sFile.close();}
-	  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-      *OCRnA[tt] = 1;
-      *OCRnB[tt] = 1;
-  }else
 
   for(int a=0; a<2; a++){
 	  if(buffEmpty[a]){
@@ -193,6 +189,12 @@ ISR(TIMER1_OVF_vect){
   buffCount++;
 
   if(buffCount >= buffSize){
+	  if(sFile.available() <= buffSize || stopPlay){
+	  	stopPlay = 0;
+	  	playing = 0;
+	  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+	  	if(sFile){sFile.close();}
+	  }
       buffCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
@@ -202,11 +204,7 @@ ISR(TIMER1_OVF_vect){
 
 
 void TMRpcm::stopPlayback(){
-  playing = 0;
-  if(sFile){sFile.close();}
-  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  *OCRnA[tt] = 1;
-  *OCRnB[tt] = 1;
+  if(playing){stopPlay = 1;}
 
 }
 
