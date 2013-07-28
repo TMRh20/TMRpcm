@@ -60,7 +60,7 @@ void TMRpcm::quality(boolean q){
 void TMRpcm::play(char* filename){
 
   if(speakerPin != lastSpeakPin){ setPin(); lastSpeakPin=speakerPin;}
-  if(playing){stopPlay=1; while(playing){} }
+  stopPlayback();
 
   if(!wavInfo(filename) ){ return; }//verify its a valid wav file
   sFile = SD.open(filename);
@@ -84,14 +84,12 @@ void TMRpcm::play(char* filename){
 	}
 
 	unsigned int mod = *OCRnA[tt];
+	int mVal = 0;
+	if(tmp > mod){ mVal = 3;
+	}else{         mVal = -3;}
 
-	if(tmp > mod){
-	    for(int i=0; i<buffSize; i++){ mod = mod+3; mod = min(mod,tmp); buffer[0][i] = mod;}
-	    for(int i=0; i<buffSize; i++){ mod = mod+3; mod = min(mod,tmp); buffer[1][i] = mod; }
-	}else{
-	    for(int i=0; i<buffSize; i++){ mod = mod-3; mod = max(mod,tmp); buffer[0][i] = mod; }
-	    for(int i=0; i<buffSize; i++){ mod = mod-3; mod = max(mod,tmp); buffer[1][i] = mod; }
-	}
+	for(int i=0; i<buffSize; i++){ mod = constrain(mod+mVal,mod,tmp); buffer[0][i] = mod; }
+	for(int i=0; i<buffSize; i++){ mod = constrain(mod+mVal,mod,tmp); buffer[1][i] = mod; }
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
     noInterrupts();
@@ -170,12 +168,10 @@ ISR(TIMER1_CAPT_vect){
 	  }
   }
 
-  if(paused){*OCRnA[tt] = *OCRnB[tt] = 1; *TIMSK[tt] &= ~_BV(TOIE1); } //if pausedd, disable overflow vector and leave this one enabled
-  else
-  if( playing ){
+  if( playing && !paused){
 		  *TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
-
-  }
+  }else
+  if(paused && playing){*TIMSK[tt] &= ~( _BV(TOIE1) ); }
 
 }
 
@@ -189,8 +185,7 @@ ISR(TIMER1_OVF_vect){
   buffCount++;
 
   if(buffCount >= buffSize){
-	  if(sFile.available() <= buffSize || stopPlay){
-	  	stopPlay = 0;
+	  if(sFile.available() <= buffSize){
 	  	playing = 0;
 	  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
 	  	if(sFile){sFile.close();}
@@ -204,7 +199,9 @@ ISR(TIMER1_OVF_vect){
 
 
 void TMRpcm::stopPlayback(){
-  if(playing){stopPlay = 1;}
+	playing = 0;
+	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+	if(sFile){sFile.close();}
 
 }
 
