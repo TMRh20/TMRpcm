@@ -156,7 +156,7 @@ ISR(TIMER1_CAPT_vect){
   //sei();
 
 
-  for(int a=0; a<2; a++){
+	  boolean a = !whichBuff;
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 		sei();
@@ -166,7 +166,6 @@ ISR(TIMER1_CAPT_vect){
 		for(int i=0; i<buffSize; i++){ tmp = (sFile.read() << volMod); buffer[a][i] = min(tmp,resolution); 	}
 		buffEmpty[a] = 0;
 	  }
-  }
 
   if( playing && !paused){
 		  *TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );

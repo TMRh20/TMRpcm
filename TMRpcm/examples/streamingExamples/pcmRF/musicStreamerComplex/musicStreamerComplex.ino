@@ -57,7 +57,6 @@ void loop(){
   if(Serial.available()){    
     switch(Serial.read()){
      case 'd': if(pcmrf.isPlaying()){ pcmrf.stop();} tmrpcm.play("cat24"); break;
-     case 'm': tmrpcm.pwmMode = !tmrpcm.pwmMode; break;
      case 'P': if(pcmrf.isPlaying()){ pcmrf.stop();}tmrpcm.play("temple"); break;
      case 'q': pcmrf.playRF("temple",0); break;
      case 'w': pcmrf.playRF("temple",1); break;

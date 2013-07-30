@@ -22,7 +22,7 @@ volatile int intCount = 0;
 volatile boolean buffEmpty[3] = {false,false};
 volatile boolean whichBuff = 0;
 byte buffer[2][buffSize+1];
-unsigned long intData = 0;
+unsigned int intData = 0;
 boolean playing = 0;
 
 int firstTime = 1;
@@ -56,7 +56,7 @@ boolean txSelX(byte sel, int timeoutDelay){
 boolean pcmRX::txSel(byte sel, int timeoutDelay){
   radi.write(&sel,sizeof(byte));
   int result = radi.getDynamicPayloadSize();
-  if( result == 4 ){ return(1);}
+  if( result == 2 ){ return(1);}
   else{
       if(result > 32){
 
