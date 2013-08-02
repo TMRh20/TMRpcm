@@ -1,9 +1,5 @@
 
 
-
-
-
-
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
@@ -15,32 +11,68 @@ unsigned int SAMPLE_RATE = 20000;
 unsigned int lstSampleRate = 1;
 const int payloadSize = 32;
 const int buffSize = 384; // 768max
-int volMod = 1;
+//int volMod = 1;
 
-volatile int volModMax = 1;
+//volatile int volModMax = 1;
 volatile int intCount = 0;
 volatile boolean buffEmpty[3] = {false,false};
 volatile boolean whichBuff = 0;
 byte buffer[2][buffSize+1];
 unsigned int intData = 0;
+unsigned int tt = 0;
 boolean playing = 0;
 
 int firstTime = 1;
 
 byte tmpArr[33];
+volatile boolean loadCount = 0;
 
-volatile boolean srX2 = false;
-volatile boolean srX15 = false;
-volatile boolean r12Toggle = false;
-volatile int loadCounter = 0;
+
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
+	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
+	volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A,&TCCR4A,&TCCR5A};
+	volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B,&TCCR4B,&TCCR5B};
+	volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A,&OCR4A,&OCR5A};
+	volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
+	volatile unsigned int *ICRn[]	= {&ICR1, &ICR3,&ICR4,&ICR5};
+
+	ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+	ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+	ISR(TIMER4_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+	ISR(TIMER4_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+	ISR(TIMER5_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+	ISR(TIMER5_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+
+#else
+	volatile byte *TIMSK[] = {&TIMSK1};
+	volatile byte *TCCRnA[] = {&TCCR1A};
+	volatile byte *TCCRnB[] = {&TCCR1B};
+	volatile unsigned int *OCRnA[] = {&OCR1A};
+	volatile unsigned int *OCRnB[] = {&OCR1B};
+	volatile unsigned int *ICRn[]	= {&ICR1};
+#endif
+
+
+
+
 
 RF24 radi(0,0);
 
 
-pcmRX::pcmRX(RF24 radio, int cs){
+pcmRX::pcmRX(RF24 radio, int cs, int spkPin){
 
 	csPin = cs;
 	radi = radio;
+	pinMode(spkPin,OUTPUT);
+	switch(spkPin){
+		case 5: tt=1; break; //use TIMER3
+		case 6: tt=2; break;//use TIMER4
+		case 46:tt=3; break;//use TIMER5
+		default:tt=0; break; //useTIMER1 as default
+	}
 
 }
 
@@ -56,8 +88,9 @@ boolean txSelX(byte sel, int timeoutDelay){
 boolean pcmRX::txSel(byte sel, int timeoutDelay){
   radi.write(&sel,sizeof(byte));
   int result = radi.getDynamicPayloadSize();
-  if( result == 2 ){ return(1);}
+  if( result == 2 ){  return(1);}
   else{
+	  Serial.println(result);
       if(result > 32){
 
 		  SPI.setBitOrder(MSBFIRST);
@@ -74,8 +107,8 @@ boolean pcmRX::txSel(byte sel, int timeoutDelay){
 
 void noTun(){
   playing = 0;
-  OCR1A = 1;
-  TIMSK1 &= ~( _BV(ICIE1) | _BV(TOIE1) );
+  //*OCRnA[tt] = 1;
+  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
   //TIMSK1 = _BV(OCIE1A); //ICR1 = 3000;
   //TCCR1B &= ~(_BV(WGM13) | _BV(CS10) | _BV(CS11) | _BV(CS12));
 
@@ -123,72 +156,29 @@ void loadSingleBuffer(boolean wBf){
 
 void pcmRX::startTimer(){
   playing = 1;
-  //TCCR1A = 0; TCCR1B = 0; // Set the timer registers back to 0
-
-  if(SAMPLE_RATE <= 10000){SAMPLE_RATE = SAMPLE_RATE*2; srX2 = true;}else{srX2 = false;}
-  if(SAMPLE_RATE > 10000 && SAMPLE_RATE < 13250){SAMPLE_RATE = SAMPLE_RATE*1.5; srX15 = true;}else{srX15 = false;}
-
-//  unsigned int resolution = (8 * (1000000/SAMPLE_RATE)); //FastPWM mode only counts up, so we get higher resolution
-   unsigned int modeMultiplier = 0;
-   boolean pMode = 1;
-   if(pMode){modeMultiplier = 8;}else{modeMultiplier = 4;}
-
-   //int test = 4 * (1000000/SAMPLE_RATE);
-   unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE); //Serial.println(resolution);
-   volModMax = (resolution * 1.5) / 248 ; //no more than 75% PWM duty cycle
-   if(volMod > volModMax){ volMod = volModMax; }
-   //volMod = volModMax-1;
-   volMod = 1;
+  Serial.println("strtd");
+  if(SAMPLE_RATE > 22050 ){ SAMPLE_RATE = 18000; Serial.print("SampleRate Too High");}
+   unsigned int resolution = 8 * (1000000/SAMPLE_RATE);
    noInterrupts();
-   ICR1 = resolution;
-   OCR1A = 1;
-
-   if(pMode){
-     TCCR1A = _BV(WGM11) | _BV(COM1A1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
-     TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
-   }else{
-     TCCR1A = _BV(COM1A1);
-     TCCR1B = _BV(WGM13) | _BV(CS10);
-   }
-   //TIMSK1 &= ~_BV(OCIE1A);
-   TIMSK1 = ( _BV(ICIE1) | _BV(TOIE1) );
-   interrupts();
+       *ICRn[tt] = resolution;
+       *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+       *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
+       *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
+    interrupts();
 }
 
 void pcmRX::resumeTimer(){
 
   playing = 1;
-//  noInterrupts();
-//  //TCCR1A = 0; TCCR1B = 0; // Set the timer registers back to 0
-//
-  if(SAMPLE_RATE != lstSampleRate){
-    lstSampleRate = SAMPLE_RATE;
-    if(SAMPLE_RATE <= 10000){SAMPLE_RATE = SAMPLE_RATE*2; srX2 = true;}else{srX2 = false;}
-    if(SAMPLE_RATE > 10000 && SAMPLE_RATE < 13500){SAMPLE_RATE = SAMPLE_RATE*1.5; srX15 = true;}else{srX15 = false;}
-
-   unsigned int modeMultiplier = 0;
-   boolean pMode = 1;
-   if(pMode){modeMultiplier = 8;}else{modeMultiplier = 4;}
-
-   //int test = 4 * (1000000/SAMPLE_RATE);
-   unsigned int resolution = modeMultiplier * (1000000/SAMPLE_RATE);
-
-  volModMax = (resolution * 1.5) / 248 ; //no more than 75% PWM duty cycle
-  if(volMod > volModMax){ volMod = volModMax; }
-  //volMod = volModMax-1;
-    //ICR1 = resolution;
-//  TIMSK1 = ( _BV(OCIE1B) | _BV(TOIE1) );
-//  interrupts();
-  }
-  //TIMSK1 &= ~_BV(OCIE1A);
-  TIMSK1 = ( _BV(ICIE1) | _BV(TOIE1) );
-
+  unsigned int resolution = 8 * (1000000/SAMPLE_RATE);
+  *ICRn[tt] = resolution;
+  *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
 }
 
 
 ISR(TIMER1_CAPT_vect){
 
-  TIMSK1 &= ~_BV(ICIE1);
+  *TIMSK[tt] &= ~_BV(ICIE1);
   sei();
 
   if(buffEmpty[0]){
@@ -198,46 +188,30 @@ ISR(TIMER1_CAPT_vect){
    loadSingleBuffer(1);
   }
 
-  //TIMSK1 = ( _BV(OCIE1B) | _BV(TOIE1) );
-  //if(!stopped){  TIMSK1 = (_BV(OCIE1B) | _BV(TOIE1) );  }
-  if(playing){  TIMSK1 = (_BV(ICIE1) | _BV(TOIE1) );  }
+  if(playing){  *TIMSK[tt] = (_BV(ICIE1) | _BV(TOIE1) );  }
 }
 
-void buffE(boolean wh){
-
-
-}
 
 
 ISR(TIMER1_OVF_vect){
 
-  //if(buffEmpty[0] == 0 || buffEmpty[1] == 0){
+
   if(buffEmpty[0] && buffEmpty[1]){  }else{
 
-    ++loadCounter;
+  loadCount = !loadCount;
+  if(loadCount == 0){ return; }
 
-    if(srX2){ if(loadCounter == 4){ loadCounter = 0; OCR1A = buffer[whichBuff][intCount] * volMod; intCount++; }
-    }else
-    if(srX15){ int tmp;
-      if(r12Toggle){tmp=4;}else{tmp=2;}
-        if(loadCounter == tmp){
-          loadCounter = 0;
-          r12Toggle = !r12Toggle;
-          OCR1A = buffer[whichBuff][intCount] * volMod; intCount++;
-        }
-    }else{ if(loadCounter == 2){ loadCounter = 0; OCR1A = buffer[whichBuff][intCount] * volMod; intCount++; }} //normal operation
+  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][intCount];
+  intCount++;
 
-    if(intCount >= buffSize){
-
+  if(intCount >= buffSize){
       intCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
-
-    }
   }
+  }
+
 }
-
-
 
 
 
@@ -274,8 +248,8 @@ void pcmRX::pollForMusic(){
               }else{resumeTimer();}
 
             }else{ Serial.println("pl2");}
+}
 
-    }
   }
 
 }

@@ -5,28 +5,21 @@
 #include "printf.h"
 #include <pcmRX.h>
 
-
-
-
 int csnPin = 7;
-RF24 radio(6,csnPin);
-pcmRX pcmrx(radio,csnPin);
-
+int speakerPin = 9;
 const uint64_t pipe = { 0x544d526832LL};
 
-void setup(){
-  
-  pinMode(9,OUTPUT);
-  Serial.begin(115200);
+RF24 radio(6,csnPin);
+pcmRX pcmrx(radio,csnPin,speakerPin);
+
+
+void setup(){  
+  Serial.begin(57600);
   printf_begin();
   rfCfg();
-
 }
 
 
-
-void loop(){
-  
-  pcmrx.pollForMusic(); 
-  
+void loop(){  
+  pcmrx.pollForMusic();   
 }

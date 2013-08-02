@@ -8,3 +8,5 @@ wavInfo	KEYWORD2
 speakerPin	KEYWORD2
 quality	KEYWORD2
 isPlaying	KEYWORD2
+pcmRF	KEYWORD1
+

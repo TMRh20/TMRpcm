@@ -12,7 +12,7 @@
 class pcmRX
 {
  public:
-	pcmRX(RF24 radio,int cs);
+	pcmRX(RF24 radio,int cs, int spkPin);
 	void playRF(RF24 radi,char* filename, int device);
 	boolean isPlaying();
 	void stop();
