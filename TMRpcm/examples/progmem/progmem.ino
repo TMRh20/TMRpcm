@@ -8,6 +8,7 @@ Sketch below based on the above link
 
 #include <avr/pgmspace.h>
 #include <TMRpcm.h>
+#include <SPI.h>
 
 TMRpcm wav;
 

@@ -2,6 +2,7 @@
 //#define SD_ChipSelectPin 53  //example uses hardware SS pin 53 on Mega2560
 #define SD_ChipSelectPin 4  //using digital pin 4 on arduino nano 328, can use other pins
 #include <TMRpcm.h>           //  also need to include this library...
+#include <SPI.h>
 
 TMRpcm tmrpcm;   // create an object for use in this sketch
 
