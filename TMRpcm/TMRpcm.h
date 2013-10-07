@@ -16,6 +16,7 @@ class TMRpcm
 	void play(char* filename);
 	void stopPlayback();
 	void volume(int vol);
+	void setVolume(int vol);
 	void disable();
 	void pause();
 	void quality(boolean q);
