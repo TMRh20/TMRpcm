@@ -56,6 +56,7 @@ Usage:
  REMOVED audio.pwmMode = 1; Now uses only fast pwm
  ADDED audio.quality(1); 1 for better sound 0 for reduced load. Playback must be stopped
  audio.volume(0); 1(up) or 0(down) NEW: Using bitshift for wider range of volume control
+ audio.setVolume(0); 0 to 7. Set volume level
 
 ************************************************************************************
 Contributed HowTo: http://maxoffsky.com/maxoffsky-blog/how-to-play-wav-audio-files-with-arduino-uno-and-microsd-card/
