@@ -121,6 +121,15 @@ void TMRpcm::volume(int upDown){
 
 }
 
+void TMRpcm::setVolume(int vol) {
+
+    vol -= 4;
+    min(vol,3);
+    max(vol,-4);
+    volMod = vol;
+
+}
+
 
 boolean TMRpcm::wavInfo(char* filename){
 
