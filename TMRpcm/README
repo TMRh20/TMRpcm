@@ -5,11 +5,14 @@
 
 Arduino library for asynchronous playback of PCM/WAV files direct from SD card
 
-Requires SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
+Utilizes standard SD library, SD card and output device (Speaker, Headphones, Amplifier, etc)
 
 ************************************************************************************
 
 Features
+
+- NEW: Up to 32khz sample rate support:
+	Supported formats: WAV files, 8-bit, 8-32khz Sample Rate, mono
 
 - PCM/WAV playback direct from SD card
 
@@ -17,10 +20,7 @@ Features
 
 - Playback uses a single timer: Timer 1 (Uno,Mega) or Timer 3,4 or 5 (Mega)
 
-- NEW: Quality setting: Previously ran timers at double sample rate for better
-       sound quality. Allows 1xSampleRate operation to reduce processing load.
-
-- Supported formats: WAV files, 8-bit, 8-20khz Sample Rate, mono
+- Quality setting: Allows 2xSample rate operation for oversampling with low sample rates
 
 - Supported devices: Arduino Uno, Nano, Mega, etc.
 
@@ -52,10 +52,9 @@ Usage:
  audio.disable(); disables the timer on output pin and stops the music
  audio.stopPlayback(); stops the music, but leaves the timer running
  audio.isPlaying();  returns 1 if music playing, 0 if not
- audio.pause();  pauses/unpauses playback
- REMOVED audio.pwmMode = 1; Now uses only fast pwm
- ADDED audio.quality(1); 1 for better sound 0 for reduced load. Playback must be stopped
- audio.volume(0); 1(up) or 0(down) NEW: Using bitshift for wider range of volume control
+ audio.pause();  pauses/unpauses playback 
+ audio.quality(1); for use with low sample rates
+ audio.volume(0); 1(up) or 0(down)
  audio.setVolume(0); 0 to 7. Set volume level
 
 ************************************************************************************

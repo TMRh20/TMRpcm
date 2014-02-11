@@ -3,12 +3,13 @@
 #include <SD.h>
 #include <TMRpcm.h>
 
-const int buffSize = 75; //note: there are 2 sound buffers. This will require (soundBuff*4) memory free
-volatile unsigned int buffer[2][buffSize+1], buffCount = 0, resolution = 500;
+const byte buffSize = 144; //note: there are 2 sound buffers. This will require (soundBuff*2) memory free
+volatile byte buffer[2][buffSize], buffCount = 0;
+volatile int resolution = 500, bcnt[2];
 volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
 unsigned int tt=0;
-int volMod=0;
-boolean paused = 0, qual = 1, stopPlay = 0;
+char volMod=0;
+boolean paused = 0, qual = 0, stopPlay = 0;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
@@ -69,7 +70,7 @@ void TMRpcm::play(char* filename){
 	playing = 1; paused = 0;
     sFile.seek(44); //skip the header info
 
-	if(SAMPLE_RATE > 22050 ){ SAMPLE_RATE = 18000; Serial.print("SampleRate Too High");}
+	if(SAMPLE_RATE > 35050 ){ SAMPLE_RATE = 24000; Serial.print("SampleRate Too High");}
 
 
     if(qual){resolution = 8 * (1000000/SAMPLE_RATE);}
@@ -77,14 +78,9 @@ void TMRpcm::play(char* filename){
 	}
 
 	unsigned int tmp = 0;
-	if(volMod < 0 ){
-		tmp = (sFile.read() >> volMod*-1);
-	}else{
-		tmp = (sFile.read() << volMod);
-	}
-
+	tmp = sFile.read();
 	unsigned int mod = *OCRnA[tt];
-	int mVal = 0;
+	int mVal;
 	if(tmp > mod){ mVal = 3;
 	}else{         mVal = -3;}
 
@@ -114,9 +110,9 @@ void TMRpcm::pause(){
 void TMRpcm::volume(int upDown){
 
   if(upDown){
-	  volMod++; volMod = min(volMod,3);
+	  volMod++; min(volMod,3);
   }else{
-	  volMod--; volMod = max(volMod, -4);
+	  volMod--; max(volMod, -4);
   }
 
 }
@@ -169,10 +165,7 @@ ISR(TIMER1_CAPT_vect){
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 		sei();
-		unsigned int tmp;
-		if(volMod < 0 ){ for(int i=0; i<buffSize; i++){ tmp = (sFile.read() >> volMod*-1); buffer[a][i] = min(tmp,resolution); 	} }
-		else
-		for(int i=0; i<buffSize; i++){ tmp = (sFile.read() << volMod); buffer[a][i] = min(tmp,resolution); 	}
+			bcnt[a] = sFile.read((byte*)buffer[a],buffSize);
 		buffEmpty[a] = 0;
 	  }
 
@@ -186,13 +179,16 @@ ISR(TIMER1_CAPT_vect){
 
 ISR(TIMER1_OVF_vect){
 
-  loadCounter = !loadCounter;
-  if(loadCounter == 0 && qual == 1){ return; }
+  if(qual == 1){ loadCounter = !loadCounter; if(loadCounter){return;}   }
 
-  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount];
+  if(volMod < 0 ){
+    *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+  }else{
+	*OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
+  }
   buffCount++;
 
-  if(buffCount >= buffSize){
+  if(buffCount >= bcnt[whichBuff]){
 	  if(sFile.available() <= buffSize){
 	  	playing = 0;
 	  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
