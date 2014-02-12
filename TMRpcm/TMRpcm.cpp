@@ -5,7 +5,7 @@
 
 const byte buffSize = 144; //note: there are 2 sound buffers. This will require (soundBuff*2) memory free
 volatile byte buffer[2][buffSize], buffCount = 0;
-volatile int resolution = 500, bcnt[2];
+volatile int resolution = 500;
 volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
 unsigned int tt=0;
 char volMod=0;
@@ -81,11 +81,11 @@ void TMRpcm::play(char* filename){
 	byte mod;
 	if(volMod > 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
 	if(tmp > mod){
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,tmp, mod); buffer[0][i] = mod; }
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,tmp, mod); buffer[1][i] = mod; }
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[0][i] = mod; }
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[1][i] = mod; }
 	}else{
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,mod, tmp); buffer[0][i] = mod; }
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,mod, tmp); buffer[1][i] = mod; }
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp ,mod); buffer[0][i] = mod; }
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp, mod); buffer[1][i] = mod; }
 	}
 
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
@@ -167,7 +167,7 @@ ISR(TIMER1_CAPT_vect){
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 		sei();
-			bcnt[a] = sFile.read((byte*)buffer[a],buffSize);
+			sFile.read((byte*)buffer[a],buffSize);
 		buffEmpty[a] = 0;
 	  }
 
@@ -188,9 +188,9 @@ ISR(TIMER1_OVF_vect){
   }else{
 	*OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
   }
-  buffCount++;
+  ++buffCount;
 
-  if(buffCount >= bcnt[whichBuff]){
+  if(buffCount >= buffSize){
 	  if(sFile.available() <= buffSize){
 	  	playing = 0;
 	  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
