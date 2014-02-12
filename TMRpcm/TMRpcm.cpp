@@ -77,15 +77,17 @@ void TMRpcm::play(char* filename){
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
 
-	unsigned int tmp = 0;
-	tmp = sFile.read();
-	unsigned int mod = *OCRnA[tt];
-	int mVal;
-	if(tmp > mod){ mVal = 3;
-	}else{         mVal = -3;}
+	unsigned int tmp = sFile.read();
+	byte mod;
+	if(volMod > 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
+	if(tmp > mod){
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,tmp, mod); buffer[0][i] = mod; }
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,tmp, mod); buffer[1][i] = mod; }
+	}else{
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,mod, tmp); buffer[0][i] = mod; }
+		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,mod, tmp); buffer[1][i] = mod; }
+	}
 
-	for(int i=0; i<buffSize; i++){ mod = constrain(mod+mVal,mod,tmp); buffer[0][i] = mod; }
-	for(int i=0; i<buffSize; i++){ mod = constrain(mod+mVal,mod,tmp); buffer[1][i] = mod; }
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
     noInterrupts();
@@ -204,6 +206,7 @@ ISR(TIMER1_OVF_vect){
 
 void TMRpcm::stopPlayback(){
 	playing = 0;
+
 	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
 	if(sFile){sFile.close();}
 
