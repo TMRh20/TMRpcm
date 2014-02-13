@@ -3,11 +3,11 @@
 #include <SD.h>
 #include <TMRpcm.h>
 
-const byte buffSize = 144; //note: there are 2 sound buffers. This will require (soundBuff*2) memory free
+const byte buffSize = 128; //note: there are 2 sound buffers. This will require (soundBuff*2) memory free
 volatile byte buffer[2][buffSize], buffCount = 0;
 volatile int resolution = 500;
 volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
-unsigned int tt=0;
+byte tt=0;
 char volMod=0;
 boolean paused = 0, qual = 0, stopPlay = 0;
 
@@ -112,20 +112,14 @@ void TMRpcm::pause(){
 void TMRpcm::volume(int upDown){
 
   if(upDown){
-	  volMod++; min(volMod,3);
+	  volMod++;
   }else{
-	  volMod--; max(volMod, -4);
+	  volMod--;
   }
-
 }
 
 void TMRpcm::setVolume(int vol) {
-
-    vol -= 4;
-    min(vol,3);
-    max(vol,-4);
-    volMod = vol;
-
+    volMod = vol - 4 ;
 }
 
 
@@ -167,7 +161,12 @@ ISR(TIMER1_CAPT_vect){
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 		sei();
-			sFile.read((byte*)buffer[a],buffSize);
+			byte siz = sFile.read((byte*)buffer[a],buffSize);
+			if(siz < buffSize){
+				  	playing = 0;
+				  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+				  	if(sFile){sFile.close();}
+	  		}
 		buffEmpty[a] = 0;
 	  }
 
@@ -191,11 +190,6 @@ ISR(TIMER1_OVF_vect){
   ++buffCount;
 
   if(buffCount >= buffSize){
-	  if(sFile.available() <= buffSize){
-	  	playing = 0;
-	  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-	  	if(sFile){sFile.close();}
-	  }
       buffCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
