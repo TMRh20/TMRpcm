@@ -30,6 +30,7 @@ class TMRpcm
  private:
 	int lastSpeakPin;
 	void setPin();
+	void timerSt();
 };
 
 

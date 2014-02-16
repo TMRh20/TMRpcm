@@ -1,4 +1,4 @@
-/*Library by TMRh20 2012-2013*/
+/*Library by TMRh20 2012-2014*/
 
 #include <SD.h>
 #include <TMRpcm.h>
@@ -9,7 +9,7 @@ volatile int resolution = 500;
 volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
 byte tt=0;
 char volMod=0;
-boolean paused = 0, qual = 0, stopPlay = 0;
+boolean paused = 0, qual = 0, stopPlay = 0, rampUp = 1;
 
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
 	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
@@ -70,14 +70,26 @@ void TMRpcm::play(char* filename){
 	playing = 1; paused = 0;
     sFile.seek(44); //skip the header info
 
-	if(SAMPLE_RATE > 35050 ){ SAMPLE_RATE = 24000; Serial.print("SampleRate Too High");}
+	if(SAMPLE_RATE > 45050 ){ SAMPLE_RATE = 24000; Serial.print("SampleRate Too High");}
 
 
     if(qual){resolution = 8 * (1000000/SAMPLE_RATE);}
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
 
-	unsigned int tmp = sFile.read();
+    byte tmp = sFile.read();
+
+    if(rampUp){
+		*OCRnA[tt] = 0; *OCRnB[tt] = resolution;
+		timerSt();
+		rampUp = 0;
+		for(int i=0; i < resolution; i++){
+			*OCRnB[tt] = constrain(resolution-i,0,resolution);
+			delayMicroseconds(100);
+
+		}
+	}
+
 	byte mod;
 	if(volMod > 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
 	if(tmp > mod){
@@ -91,9 +103,7 @@ void TMRpcm::play(char* filename){
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
 
     noInterrupts();
-    *ICRn[tt] = resolution;
-    *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
-    *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
+	timerSt();
     *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
     interrupts();
 
@@ -102,10 +112,20 @@ void TMRpcm::play(char* filename){
 
 }
 
+void TMRpcm::timerSt(){
+	*ICRn[tt] = resolution;
+	*TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+    *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
+}
 
 
 void TMRpcm::pause(){
 	paused = !paused;
+	if(!paused && playing){
+		*TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
+	}else if(paused && playing){
+		*TIMSK[tt] &= ~( _BV(TOIE1) );
+	}
 }
 
 
@@ -161,26 +181,23 @@ ISR(TIMER1_CAPT_vect){
 	  if(buffEmpty[a]){
 		*TIMSK[tt] &= ~(_BV(ICIE1));
 		sei();
-			byte siz = sFile.read((byte*)buffer[a],buffSize);
-			if(siz < buffSize){
-				  	playing = 0;
-				  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-				  	if(sFile){sFile.close();}
-	  		}
-		buffEmpty[a] = 0;
+		if(sFile.read((byte*)buffer[a],buffSize) < buffSize){
+		  	playing = 0;
+		  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+		  	if(sFile){sFile.close();}
+	  	}else{
+			buffEmpty[a] = 0;
+			*TIMSK[tt] |= _BV(ICIE1);
+		}
 	  }
 
-  if( playing && !paused){
-		  *TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
-  }else
-  if(paused && playing){*TIMSK[tt] &= ~( _BV(TOIE1) ); }
 
 }
 
 
 ISR(TIMER1_OVF_vect){
 
-  if(qual == 1){ loadCounter = !loadCounter; if(loadCounter){return;}   }
+  if(qual){loadCounter = !loadCounter;if(loadCounter){ return; }}
 
   if(volMod < 0 ){
     *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
@@ -210,9 +227,15 @@ void TMRpcm::disable(){
   playing = 0;
   if(sFile){sFile.close();}
   *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  *TCCRnB[tt] &= ~(_BV(CS10) | _BV(CS11) | _BV(CS12) );
-  *TCCRnA[tt] = *TCCRnB[tt] = 0;
 
+  int current = *OCRnA[tt];
+  for(int i=0; i < resolution; i++){
+	*OCRnB[tt] = constrain((current + i),0,resolution);
+	*OCRnA[tt] = constrain((current - i),0,resolution);
+	delayMicroseconds(50);
+  }
+  rampUp = 1;
+  *TCCRnA[tt] = *TCCRnB[tt] = 0;
 }
 
 
