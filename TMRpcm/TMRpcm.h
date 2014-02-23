@@ -3,34 +3,11 @@
 #ifndef TMRpcm_h   // if x.h hasn't been included yet...
 #define TMRpcm_h   //   #define this so the compiler knows it has been included
 
-
-
-//****************** USER DEFINES ********************************
-
-/* Override the default size of the buffers (MAX 255). There are 2 buffers, so memory usage will be double this number
-   Defaults to 64bytes for Uno etc. 128 for Mega etc*/
-
-//#define buffSize 128  //note: In multi mode there are 4 buffers
-
-/* Uncomment to run the SD card at full speed (half speed is default for standard SD lib)**/
-
-#define SD_FULLSPEED
-
-/* New MULTI Track mode currently allows playback of 2 tracks at once
-   See https://github.com/TMRh20/TMRpcm/wiki for info on usage */
-
-//#define ENABLE_MULTI  //Using separate pins on a single 16-bit timer
-//	#define MODE2  //Using separate 16-bit timers with up to 4 pins (Arduino Mega etc only)
-
-/* Comment or Uncomment to en/disable RF streaming of wav files
-   Make sure to Comment if not using radio*/
-
-//#define ENABLE_RF
-
-//*****************************************************************
-
 #include <Arduino.h>
+#include <pcmConfig.h>
 #include <pcmRF.h>
+#include <SD.h>
+#include <SdFat.h>
 
 
 class TMRpcm
@@ -44,33 +21,53 @@ class TMRpcm
 	void disable();
 	void pause();
 	void quality(boolean q);
-	int speakerPin;
+	byte speakerPin;
 	boolean wavInfo(char* filename);
 	boolean isPlaying();
 	boolean rfPlaying;
 	unsigned int SAMPLE_RATE;
+	byte listInfo(char* filename, char *tagData, byte infoNum);
+	byte id3Info(char* filename, char *tagData, byte infoNum);
+	byte getInfo(char* filename, char* tagData, byte infoNum);
+	#if defined (MODE2)
+		byte speakerPin2;
+	#endif
 	#if defined (ENABLE_MULTI)
 		void quality(boolean q, boolean q2);
 		void play(char* filename, boolean which);
+		void play(char* filename, unsigned long seekPoint, boolean which);
 		boolean isPlaying(boolean which);
 		void stopPlayback(boolean which);
 		void volume(char upDown,boolean which);
 		void setVolume(char vol, boolean which);
 		//void ramp(boolean wBuff);
-		int speakerPin2;
+	#else
+		void play(char* filename, unsigned long seekPoint);
 	#endif
+	void createWavTemplate(char* filename,unsigned int sampleRate);
+	void finalizeWavTemplate(char* filename);
 
  private:
-	int lastSpeakPin;
+	byte lastSpeakPin;
+	//unsigned int resolution;
 	void setPin();
 	void timerSt();
-	void ramp(boolean wBuff);
+	#if defined (ENABLE_MULTI)
+		void ramp(boolean wBuff);
+	#endif
 	#if defined (MODE2)
 		void setPins();
 	#endif
+	byte metaInfo(boolean infoType, char* filename, char* tagData, byte whichInfo);
+	boolean seek(unsigned long pos);
+	boolean ifOpen();
+	unsigned long fPosition();
+	#if !defined (SDFAT)
+		boolean searchMainTags(File xFile, char *datStr);
+	#else
+		unsigned long searchMainTags(SdFile xFile, char *datStr);
+	#endif
 };
-
-
 
 #endif
 

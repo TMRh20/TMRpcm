@@ -1,96 +1,158 @@
 /*Library by TMRh20 2012-2014*/
 
+
 #include <SD.h>
+#include <SdFat.h>
 #include <TMRpcm.h>
+#include <pcmConfig.h>
 
 
 
 //********************* Timer arrays and pointers **********************
+//********** Enables use of different timers on different boards********
 
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#if !defined (USE_TIMER2) //NOT using TIMER2
 
-#if !defined (buffSize)
-	#define buffSize 128
-#endif
+	const byte togByte = _BV(ICIE1); //Get the value for toggling the buffer interrupt on/off
 
-	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
-	volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A,&TCCR4A,&TCCR5A};
-	volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B,&TCCR4B,&TCCR5B};
-	volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A,&OCR4A,&OCR5A};
-	volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
-	volatile unsigned int *ICRn[]	= {&ICR1, &ICR3,&ICR4,&ICR5};
+	#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 
-	ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
-	ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
-
-	ISR(TIMER4_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
-	ISR(TIMER4_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
-
-	ISR(TIMER5_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
-	ISR(TIMER5_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
-
-#elif defined (__AVR_ATmega32U4__) || (__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__) || (__AVR_ATmega128__) ||defined(__AVR_ATmega1281__)||defined(__AVR_ATmega2561__)
-
-	#if !defined buffSize
-		#define buffSize 128
-	#endif
-
-	volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3};
-	volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A};
-	volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B};
-	volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A};
-	volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B};
-	volatile unsigned int *ICRn[]	= {&ICR1, &ICR3};
-
-	ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
-	ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
-
-#else
 	#if !defined (buffSize)
-		#define buffSize 64
+		#define buffSize 254
+	#endif
+	#if !defined (rampMega)
+			#define rampMega
 	#endif
 
-	volatile byte *TIMSK[] = {&TIMSK1};
-	volatile byte *TCCRnA[] = {&TCCR1A};
-	volatile byte *TCCRnB[] = {&TCCR1B};
-	volatile unsigned int *OCRnA[] = {&OCR1A};
-	volatile unsigned int *OCRnB[] = {&OCR1B};
-	volatile unsigned int *ICRn[]	= {&ICR1};
+		volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3,&TIMSK4,&TIMSK5};
+		volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A,&TCCR4A,&TCCR5A};
+		volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B,&TCCR4B,&TCCR5B};
+		volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A,&OCR4A,&OCR5A};
+		volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
+		volatile unsigned int *ICRn[] = {&ICR1, &ICR3,&ICR4,&ICR5};
+		volatile unsigned int *TCNT[] = {&TCNT1,&TCNT3,&TCNT4,&TCNT5};
+
+		ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+		ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+		ISR(TIMER4_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+		ISR(TIMER4_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+		ISR(TIMER5_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+		ISR(TIMER5_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+	#elif defined (__AVR_ATmega32U4__) || (__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__) || (__AVR_ATmega128__) ||defined(__AVR_ATmega1281__)||defined(__AVR_ATmega2561__)
+
+		#if !defined buffSize
+			#define buffSize 128
+		#endif
+		#if !defined (rampMega)
+				#define rampMega
+		#endif
+
+		volatile byte *TIMSK[] = {&TIMSK1,&TIMSK3};
+		volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A};
+		volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B};
+		volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A};
+		volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B};
+		volatile unsigned int *ICRn[]	= {&ICR1, &ICR3};
+		volatile unsigned int *TCNT[] = {&TCNT1,&TCNT3};
+
+		ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
+		ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
+
+	#else
+		#if !defined (buffSize)
+			#define buffSize 64
+		#endif
+
+		volatile byte *TIMSK[] = {&TIMSK1};
+		volatile byte *TCCRnA[] = {&TCCR1A};
+		volatile byte *TCCRnB[] = {&TCCR1B};
+		volatile unsigned int *OCRnA[] = {&OCR1A};
+		volatile unsigned int *OCRnB[] = {&OCR1B};
+		volatile unsigned int *ICRn[]	= {&ICR1};
+		volatile unsigned int *TCNT[] = {&TCNT1};
+	#endif
+
+
+
+#else //USING TIMER 2
+
+	#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+
+		#if !defined (buffSize)
+			#define buffSize 128
+		#endif
+	#elif defined (__AVR_ATmega32U4__) || (__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__) || (__AVR_ATmega128__) ||defined(__AVR_ATmega1281__)||defined(__AVR_ATmega2561__)
+		#if !defined (buffSize)
+				#define buffSize 128
+		#endif
+	#else
+		#if !defined (buffSize)
+			#define buffSize 64
+		#endif
+	#endif
+
+		volatile byte *TIMSK[] = {&TIMSK2};
+		volatile byte *TCCRnA[] = {&TCCR2A};
+		volatile byte *TCCRnB[] = {&TCCR2B};
+		volatile byte *OCRnA[] = {&OCR2A};
+		volatile byte *OCRnB[] = {&OCR2B};
+		volatile byte *TCNT[] = {&TCNT2};
+
+		const byte togByte = _BV(OCIE2B);
+
+
 #endif
 
 
+
+//**********Global Variables for Regular and Multi modes ************
 
 #if defined (ENABLE_MULTI)
-
-	#if defined (MODE2)
-		byte tt2 = 0;
-	#endif
-	volatile byte buffer2[2][buffSize], buffCount2 = 0;
+	volatile byte buffer2[2][buffSize];
+	volatile byte buffCount2 = 0;
 	volatile boolean buffEmpty2[2] = {false,false}, whichBuff2 = false, playing2 = 0;
 	char volMod2=0;
-	volatile boolean paused2 = 0, stopPlay2 = 0, open2 = 0, open1 = 0, load1 = 0, load2 = 0,a,b;
+	volatile boolean paused2 = 0, open2 = 0, open1 = 0, load1 = 0, load2 = 0,a,b;
 	char *fileName2;
+	#if !defined (SDFAT)
 	File tFile;
-
+	#else
+	SdFile tFile;
+	#endif
 #endif
 
-//*********** Global Variables ***************
-volatile int resolution = 500;
-volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, loadCounter=0, playing = 0;
-boolean paused = 0, qual = 0, stopPlay = 0, rampUp = 1;
+//*********** Standard Global Variables ***************
+volatile unsigned int dataEnd;
+unsigned int resolution;
+volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, playing = 0;
+#if !defined (USE_TIMER2)
+	volatile boolean loadCounter=0;
+#else
+	volatile byte loadCounter = 0, SR = 3;
+#endif
+boolean paused = 0, qual = 0, rampUp = 1, _2bytes=0;
 char volMod=0;
-volatile byte buffer[2][buffSize], buffCount = 0;
-byte tt=0;
+volatile byte buffer[2][buffSize];
+volatile byte buffCount = 0;
+byte tt;
 
+#if !defined (SDFAT)
 File sFile;
+#else
+SdFile sFile;
+#endif
+
+#if defined (MODE2)
+	byte tt2 = 0;
+#endif
+//**************************************************************
+//********** Core Playback Functions used in all modes *********
 
 
-//********** Functions used in all modes *****
-
-void TMRpcm::quality(boolean q){
-	if(!playing){qual = q;}
-}
-
+#if !defined (USE_TIMER2) //NOT using timer2
 void TMRpcm::timerSt(){
 	*ICRn[tt] = resolution;
 	*TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
@@ -101,59 +163,33 @@ void TMRpcm::timerSt(){
 	*TCCRnB[tt2] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
   #endif
 }
+#else //Using TIMER2
 
-boolean TMRpcm::wavInfo(char* filename){
-
-  //check for the string WAVE starting at 8th bit in header of file
-  File xFile = SD.open(filename);
-  if(!xFile){return 0;}
-  xFile.seek(8);
-  char wavStr[] = {'W','A','V','E'};
-  for (int i =0; i<4; i++){
-	  if(xFile.read() != wavStr[i]){ Serial.println("WAV File Error"); break; }
-  }
-
-    xFile.seek(24);
-    SAMPLE_RATE = xFile.read();
-    SAMPLE_RATE = xFile.read() << 8 | SAMPLE_RATE;
-
-    //verify that Bits Per Sample is 8 (0-255)
-    xFile.seek(34); unsigned int dVar = xFile.read();
-    dVar = xFile.read() << 8 | dVar;
-    if(dVar != 8){Serial.print("Wrong BitRate"); xFile.close(); return 0;}
-    xFile.close(); return 1;
-}
-
-
-void TMRpcm::stopPlayback(){
-	playing = 0;
-	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-	if(sFile){sFile.close();}
-	#if defined (ENABLE_MULTI)
-		playing2 = 0;
-		if(tFile){tFile.close();}
+void TMRpcm::timerSt(){
+	#if defined (EXT_CRYSTAL)
+		ASSR |= _BV(AS2);
 	#endif
-
+	*TCCRnA[tt] = _BV(WGM21) | _BV(WGM20) | _BV(COM2B1); //Fast PWM with 0xFF (255) top
+	*TCCRnB[tt] = _BV(CS20);
 }
+#endif
 
-void TMRpcm::pause(){
-	paused = !paused;
-	if(!paused && playing){
-		*TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
-	}else if(paused && playing){
-		*TIMSK[tt] &= ~( _BV(TOIE1) );
-	}
-}
 
 void TMRpcm::setPin(){
 	disable();
 	pinMode(speakerPin,OUTPUT);
-	switch(speakerPin){
-		case 5: tt=1; break; //use TIMER3
-		case 6: tt=2; break;//use TIMER4
-		case 46:tt=3; break;//use TIMER5
-		default:tt=0; break; //useTIMER1 as default
-	}
+
+	#if !defined (USE_TIMER2) //NOT using TIMER2
+		switch(speakerPin){
+			case 5: tt=1; break; //use TIMER3
+			case 6: tt=2; break;//use TIMER4
+			case 46:tt=3; break;//use TIMER5
+			default:tt=0; break; //useTIMER1 as default
+		}
+	#else //Using TIMER2 only
+		tt = 0;
+	#endif
+
 	#if defined (SD_FULLSPEED)
 		SPSR |= (1 << SPI2X);
 	   	SPCR &= ~((1 <<SPR1) | (1 << SPR0));
@@ -186,65 +222,255 @@ void TMRpcm::setPins(){
 }
 #endif
 
+
+boolean TMRpcm::wavInfo(char* filename){
+
+  //check for the string WAVE starting at 8th bit in header of file
+  #if !defined (SDFAT)
+  sFile = SD.open(filename);
+  #else
+  sFile.open(filename);
+  #endif
+
+  if( !ifOpen() ){ return 0; }
+  seek(8);
+  char wavStr[] = {'W','A','V','E'};
+  for (byte i =0; i<4; i++){
+	  if(sFile.read() != wavStr[i]){
+		  #if defined (debug)
+		  	Serial.println("WAV ERROR");
+		  #endif
+		  break; }
+  }
+	#if defined (STEREO_OR_16BIT)
+	    byte stereo, bps;
+		seek(22);
+	    stereo = sFile.read();
+	    seek(24);
+	#else
+	    seek(24);
+	#endif
+
+    SAMPLE_RATE = sFile.read();
+    SAMPLE_RATE = sFile.read() << 8 | SAMPLE_RATE;
+
+    #if defined (USE_TIMER2)
+    	if(SAMPLE_RATE < 20000){ SR = 0; }
+    	else if(SAMPLE_RATE < 28000){ SR = 1; }
+    	else{ SR = 2; }
+    #endif
+	#if defined (STEREO_OR_16BIT)
+	    //verify that Bits Per Sample is 8 (0-255)
+		seek(34);
+	    bps = sFile.read();
+	    bps = sFile.read() << 8 | bps;
+	    if(bps == 16 || stereo == 2){ _2bytes=1; }else{_2bytes=0;}
+	#endif
+
+	#if defined (HANDLE_TAGS)
+
+		seek(36);
+	    char datStr[4] = {'d','a','t','a'};
+	    for (byte i =0; i<4; i++){
+			if(sFile.read() != datStr[i]){
+			 	seek(40);
+			 	unsigned int siz = sFile.read();
+			 	siz = (sFile.read() << 8 | siz)+2;
+			 	seek(fPosition() + siz);
+ 	     		for (byte i =0; i<4; i++){
+					if(sFile.read() != datStr[i]){
+						return 0;
+					}
+		 		}
+			}
+		 }
+
+		unsigned long dataBytes = sFile.read();
+	    for (byte i =8; i<32; i+=8){
+			dataBytes = sFile.read() << i | dataBytes;
+		}
+		#if !defined (SDFAT)
+			dataEnd = sFile.size() - fPosition() - dataBytes + buffSize;
+		#else
+			dataEnd = sFile.fileSize() - fPosition() - dataBytes + buffSize;
+		#endif
+
+	#else //No Tag handling
+
+		seek(44); dataEnd = buffSize;
+
+	#endif
+
+	return 1;
+
+}
+
+
+//*************** General Playback Functions *****************
+
+void TMRpcm::quality(boolean q){
+	if(!playing){	qual = q; }
+}
+
+void TMRpcm::stopPlayback(){
+	playing = 0;
+
+	*TIMSK[tt] &= ~(togByte | _BV(TOIE1));
+
+	if(ifOpen()){ sFile.close(); }
+
+	#if defined (ENABLE_MULTI)
+		playing2 = 0;
+		#if !defined (SDFAT)
+		if(tFile){tFile.close();}
+		#else
+		if(tFile.isOpen()){tFile.close();}
+		#endif
+	#endif
+
+}
+
+void TMRpcm::pause(){
+	paused = !paused;
+	if(!paused && playing){
+		#if !defined (USE_TIMER2)
+			*TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
+		#else
+			*TIMSK[tt] |= ( _BV(OCIE2B) | _BV(TOIE1) );
+		#endif
+	}else if(paused && playing){
+		*TIMSK[tt] &= ~( _BV(TOIE1) );
+	}
+}
+
+
+/**************************************************
+This section used for translation of functions between
+ SDFAT library and regular SD library
+Prevents a whole lot more #if defined statements */
+
+#if !defined (SDFAT)
+
+	boolean TMRpcm::seek( unsigned long pos ){
+		return sFile.seek(pos);
+	}
+
+	unsigned long TMRpcm::fPosition( ){
+		return sFile.position();
+	}
+
+	boolean TMRpcm::ifOpen(){
+		if(sFile){ return 1;}
+	}
+
+#else
+
+	boolean TMRpcm::seek(unsigned long pos ){
+		return sFile.seekSet(pos);
+	}
+
+	unsigned long TMRpcm::fPosition(){
+		return sFile.curPosition();
+	}
+
+	boolean TMRpcm::ifOpen(){
+		return sFile.isOpen();
+	}
+
+#endif
+
+
+
 //***************************************************************************************
 //********************** Functions for single track playback ****************************
 
 #if !defined (ENABLE_MULTI) //Below section for normal playback of 1 track at a time
 
 
-
-
 void TMRpcm::play(char* filename){
+	play(filename,0);
+}
 
-  if(speakerPin != lastSpeakPin){ setPin(); lastSpeakPin=speakerPin;}
+
+void TMRpcm::play(char* filename, unsigned long seekPoint){
+
+  if(speakerPin != lastSpeakPin){
+	  #if !defined (MODE2)
+	  	setPin();
+	  #else
+	    setPins();
+	  #endif
+	  lastSpeakPin=speakerPin;
+   }
   stopPlayback();
+  if(!wavInfo(filename)){
+  	#if defined (debug)
+  		Serial.println("WAV ERROR");
+  	#endif
+  return;
+  }//verify its a valid wav file
 
-  if(!wavInfo(filename) ){ return; }//verify its a valid wav file
-  sFile = SD.open(filename);
 
-  if(sFile){
+  		if(seekPoint > 0){ seekPoint = (SAMPLE_RATE*seekPoint) + fPosition();
+  		seek(seekPoint); //skip the header info
+
+  }
 	playing = 1; paused = 0;
-    sFile.seek(44); //skip the header info
 
-	if(SAMPLE_RATE > 45050 ){ SAMPLE_RATE = 24000; Serial.print("SampleRate Too High");}
+	if(SAMPLE_RATE > 45050 ){ SAMPLE_RATE = 24000;
+	#if defined (debug)
+  	  	Serial.println("SAMPLE RATE TOO HIGH");
+  	#endif
+  	}
 
-
+#if !defined (USE_TIMER2)
     if(qual){resolution = 8 * (1000000/SAMPLE_RATE);}
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
+#else
+	resolution = 255;
+#endif
+    byte tmp = (sFile.read() + sFile.peek()) / 2;
 
-    byte tmp = sFile.read();
-
+	#if defined(rampMega)
     if(rampUp){
-		*OCRnA[tt] = 0; *OCRnB[tt] = resolution;
-		timerSt();
-		rampUp = 0;
-		for(int i=0; i < resolution; i++){
-			*OCRnB[tt] = constrain(resolution-i,0,resolution);
-			delayMicroseconds(50);
 
-		}
+			*OCRnA[tt] = 0; *OCRnB[tt] = resolution;
+			timerSt();
+			for(unsigned int i=0; i < resolution; i++){
+
+				*OCRnB[tt] = constrain(resolution-i,0,resolution);
+
+			//if(bitRead(*TCCRnB[tt],0)){
+			//	for(int i=0; i<10; i++){
+			//		while(*TCNT[tt] < resolution-50){}
+			//	}
+			//}else{
+				delayMicroseconds(150);
+			//}
+			}
+
 	}
+	#endif
 
+	rampUp = 0;
 	byte mod;
 	if(volMod > 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
 	if(tmp > mod){
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[0][i] = mod; }
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[1][i] = mod; }
+		for(byte i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[0][i] = mod; }
+		for(byte i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[1][i] = mod; }
 	}else{
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp ,mod); buffer[0][i] = mod; }
-		for(int i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp, mod); buffer[1][i] = mod; }
+		for(byte i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp ,mod); buffer[0][i] = mod; }
+		for(byte i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp, mod); buffer[1][i] = mod; }
 	}
 
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
-
     noInterrupts();
 	timerSt();
-    *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
+
+    *TIMSK[tt] = ( togByte | _BV(TOIE1) );
+
     interrupts();
-
-
-  }else{Serial.println("Read fail"); }
 
 }
 
@@ -262,8 +488,15 @@ void TMRpcm::setVolume(char vol) {
 }
 
 
-ISR(TIMER1_CAPT_vect){
 
+volatile boolean a;
+
+
+#if !defined (USE_TIMER2) //Not using TIMER2
+ISR(TIMER1_CAPT_vect){
+#else 					  //Using TIMER2
+ISR(TIMER2_COMPB_vect){
+#endif
 
   // The first step is to disable this interrupt before manually enabling global interrupts.
   // This allows this interrupt vector (COMPB) to continue loading data while allowing the overflow interrupt
@@ -273,59 +506,118 @@ ISR(TIMER1_CAPT_vect){
   //sei();
 
 
-	  boolean a = !whichBuff;
-	  if(buffEmpty[a]){
-		*TIMSK[tt] &= ~(_BV(ICIE1));
+	if(buffEmpty[!whichBuff]){
+		a = !whichBuff;
+		*TIMSK[tt] &= ~togByte;
 		sei();
-		if(sFile.read((byte*)buffer[a],buffSize) < buffSize){
+		//byte tz;
+		//if( tz = sFile.read((byte*)buffer[a],buffSize) <= dataEnd){
+		sFile.read((byte*)buffer[a],buffSize);
+		if( sFile.available() <= buffSize){
 		  	playing = 0;
-		  	*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-		  	if(sFile){sFile.close();}
-	  	}else{
+		  	*TIMSK[tt] &= ~( togByte | _BV(TOIE1) );
+		  	#if !defined (SDFAT)
+			  	if(sFile){ sFile.close();}
+			#else
+				if(sFile.isOpen()){ sFile.close();}
+			#endif
+			return;
+	  	}
 			buffEmpty[a] = 0;
-			*TIMSK[tt] |= _BV(ICIE1);
-		}
-	  }
-
-
+			*TIMSK[tt] |= togByte;
+   	}
 }
 
+#if defined(USE_TIMER2)
 
-ISR(TIMER1_OVF_vect){
+	ISR(TIMER2_OVF_vect){
 
-  if(qual){loadCounter = !loadCounter;if(loadCounter){ return; }}
+		//TIMER2 runs at 16mhz/255 (62,745Hz), so the timing for sample rate must be manually counted
+		switch (SR){
+			case 2: if(loadCounter){loadCounter = 0;return;}  break;
+			case 0: if(loadCounter){ if(loadCounter >= 3){loadCounter=0; return;} loadCounter++; return;} break;
+			case 1: if(loadCounter){ if(loadCounter >= 2){loadCounter=0; return; }loadCounter++;  return;} break;
+		}
+		loadCounter++;
 
-  if(volMod < 0 ){
-    *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
-  }else{
-	*OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
-  }
-  ++buffCount;
+		if(volMod < 0 ){  *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+		}else{  		  *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
+		}
+	  	++buffCount;
+	  	  if(buffCount >= buffSize){
+		  buffCount = 0;
+	      buffEmpty[whichBuff] = true;
+	      whichBuff = !whichBuff;
+	  	}
+	}
 
-  if(buffCount >= buffSize){
-      buffCount = 0;
+#else
+	ISR(TIMER1_OVF_vect){
+	  if(qual){loadCounter = !loadCounter;if(loadCounter){ return; } }
+
+	#if defined (STEREO_OR_16BIT)
+	if( !_2bytes ){
+	#endif
+		if(volMod < 0 ){  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+	  	}else{  		  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
+	  	}
+	  	++buffCount;
+
+	#if defined (STEREO_OR_16BIT)
+	}else{
+		#if !defined (MODE2)
+			if(volMod < 0 ){ *OCRnA[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+  							 *OCRnB[tt] = buffer[whichBuff][buffCount+1] >> (volMod*-1);
+
+	  		}else{    		 *OCRnA[tt] = buffer[whichBuff][buffCount] << volMod;
+							 *OCRnB[tt] = buffer[whichBuff][buffCount+1] << volMod;
+  			}
+  		#else
+			if(volMod < 0 ){
+							 *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+  							 *OCRnA[tt2] = *OCRnB[tt2] =buffer[whichBuff][buffCount+1] >> (volMod*-1);
+
+	  		}else{    		 *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
+							 *OCRnA[tt2] = *OCRnB[tt2] = buffer[whichBuff][buffCount+1] << volMod;
+  			}
+
+  		#endif
+  		buffCount+=2;
+  	}
+	#endif
+
+  	if(buffCount >= buffSize){
+	  buffCount = 0;
       buffEmpty[whichBuff] = true;
       whichBuff = !whichBuff;
-  }
-
+  	}
 }
 
+#endif
 
 
 
 void TMRpcm::disable(){
-  playing = 0;
-  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  if(sFile){sFile.close();}
-  int current = *OCRnA[tt];
-  for(int i=0; i < resolution; i++){
-	*OCRnB[tt] = constrain((current + i),0,resolution);
-	*OCRnA[tt] = constrain((current - i),0,resolution);
-	delayMicroseconds(50);
-  }
-  rampUp = 1;
-  *TCCRnA[tt] = *TCCRnB[tt] = 0;
+	playing = 0;
+	*TIMSK[tt] &= ~( togByte | _BV(TOIE1) );
+	if(ifOpen()){ sFile.close();}
+	if(bitRead(*TCCRnA[tt],7) > 0){
+		int current = *OCRnA[tt];
+		for(int i=0; i < resolution; i++){
+			#if defined(rampMega)
+				*OCRnB[tt] = constrain((current + i),0,resolution);
+				*OCRnA[tt] = constrain((current - i),0,resolution);
+			#else
+				*OCRnB[tt] = constrain((current - i),0,resolution);
+				*OCRnA[tt] = constrain((current - i),0,resolution);
+			#endif
+			for(int i=0; i<10; i++){ while(*TCNT[tt] < resolution-50){} }
+		}
+	}
+    rampUp = 1;
+    *TCCRnA[tt] = *TCCRnB[tt] = 0;
 }
+
 
 
 boolean TMRpcm::isPlaying(){
@@ -334,21 +626,22 @@ boolean TMRpcm::isPlaying(){
 
 
 
-
-
-
 //***************************************************************************************
 //********************** Functions for dual track playback ****************************
 #else //Else Dual
 
 
+void TMRpcm::play(char* filename, boolean which){
+	play(filename,which,44);
+}
 
-
-
+void TMRpcm::play(char* filename){
+	play(filename,0,44);
+}
 
 byte hold = 0;
 
-void TMRpcm::play(char* filename, boolean which){
+void TMRpcm::play(char* filename, boolean which, unsigned long seekPoint){
 
   if(speakerPin != lastSpeakPin){
 	  #if defined (MODE2)
@@ -358,9 +651,9 @@ void TMRpcm::play(char* filename, boolean which){
 	  #endif
 	  lastSpeakPin=speakerPin;
   }
-
   byte dual = 0;
 
+	#if defined(rampMega)
     if(rampUp){
 		*OCRnA[tt] = 0; *OCRnB[tt] = resolution;
 		#if defined (MODE2)
@@ -368,7 +661,7 @@ void TMRpcm::play(char* filename, boolean which){
 		#endif
 		timerSt();
 		rampUp = 0;
-		for(int i=0; i < resolution; i++){
+		for(unsigned int i=0; i < resolution; i++){
 			*OCRnB[tt] = constrain(resolution-i,0,resolution);
 			#if defined (MODE2)
 				*OCRnB[tt2] = constrain(resolution-i,0,resolution);
@@ -376,80 +669,125 @@ void TMRpcm::play(char* filename, boolean which){
 			delayMicroseconds(50);
 
 		}
-
-
 	}
+	#endif
 
   if((!playing && !playing2) || (playing && !playing2 && !which) || (playing2 && !playing && which) ){
 	  stopPlayback();
 	  if(!wavInfo(filename) ){ return; }//verify its a valid wav file
+	  if(seekPoint > 44){ seekPoint = SAMPLE_RATE*seekPoint;}
 	  if(!which){
-	  	sFile = SD.open(filename,FILE_READ);
+		#if !defined (SDFAT)
+		sFile = SD.open(filename);
+		#else
+	  	sFile.open(filename,O_READ);
+	  	#endif
 	  }else{
-	    tFile = SD.open(filename,FILE_READ);
+		  #if !defined (SDFAT)
+			tFile = SD.open(filename);
+	      #else
+	    	tFile.open(filename,O_READ);
+  	  	  #endif
   	  }
-  	  	if(SAMPLE_RATE > 45050 ){ SAMPLE_RATE = 24000; Serial.print("SampleRate Too High");}
-
+  	  	if(SAMPLE_RATE > 45050 ){ SAMPLE_RATE = 24000;
+  	  		#if defined (debug)
+	  	  		Serial.print("SampleRate Too High");
+			#endif
+		}
+	#if !defined (USE_TIMER2)
 	    if(qual){resolution = 8 * (1000000/SAMPLE_RATE);}
-        else{ resolution = 16 * (1000000/SAMPLE_RATE);
-	  }
+        else{ resolution = 16 * (1000000/SAMPLE_RATE);}
+    #else
+    	resolution = 255;
+    #endif
+
 
   }else{
 	  if(!which){ playing = 0; sFile.close(); dual = 1; }
 	  if(which ){ playing2 = 0; tFile.close(); dual = 1; }
-
   }
-
 
  if(!dual){
 
 	if(!which){
-		//playing = 1;
 		paused = 0;
-		if(sFile){
-	    	ramp(0);
-		}else{Serial.println("Read fail"); return; }
+		if(ifOpen()){
+			ramp(0);
+		}else{
+			#if defined (debug)
+				Serial.println("Read fail");
+			#endif
+			return;
+		}
 	}else{
-		//playing2 = 1;
 		paused = 0;
-		if(tFile){
-		    ramp(1);
-		}else{Serial.println("Read fail"); return; }
+		#if !defined (SDFAT)
+			if(tFile){
+		#else
+			if(tFile.isOpen()){
+		#endif
+		    	ramp(1);
+			}else{
+				#if defined (debug)
+					Serial.println("Read fail");
+				#endif
+				return;
+			}
 	}
-
 
     noInterrupts();
     timerSt();
-    *TIMSK[tt] = ( _BV(ICIE1) | _BV(TOIE1) );
-    //if(!once){ *OCRnA[tt] = 0; *OCRnB[tt] = resolution; once = 1;}
+    *TIMSK[tt] = ( togByte | _BV(TOIE1) );
 	interrupts();
 
   }
 
-  //if(!which){playing = 1;}else{playing2 = 1;}
   if(dual){
-	  //while(buffCount > 0){}
+ 		if(seekPoint > 44){ seekPoint = SAMPLE_RATE*seekPoint;}
+		*TIMSK[tt] &= ~togByte;
+		if(!which){
+			if(ifOpen()){ sFile.close(); }
 
-	*TIMSK[tt] &= ~(_BV(ICIE1));
-	if(!which){
-		if(sFile){sFile.close();}
-		sFile = SD.open(filename);
-		if(sFile){ ramp(0); hold = 1; playing = 1; }else{ Serial.println("Dual Read fail"); return; }//open1 = 1; fileName2 = filename;  }
-	}else
-	if(which){
-		if(tFile){tFile.close();}
-		tFile = SD.open(filename);
-		if(tFile){ ramp(1); hold = 2; playing2 = 1; }else{Serial.println("Dual Read fail"); return; } //open1 = 1; fileName2 = filename;  }
-	}
-	*TIMSK[tt] |= (_BV(ICIE1));
-	//interrupts();
+			#if !defined (SDFAT)
+				sFile = SD.open(filename);
+			#else
+				sFile.open(filename,O_READ);
+			#endif
+			if(ifOpen()){
+				seek(seekPoint);
+				ramp(0); playing = 1;
+	    	}else{
+				#if defined (debug)
+				Serial.println("Dual Read fail");
+				#endif
+				return;
+			}//open1 = 1; fileName2 = filename;  }
+ 		 }else
+
+		 if(which){
+			#if !defined (SDFAT)
+				if(tFile){tFile.close();}
+				tFile = SD.open(filename);
+				if(tFile){ tFile.seek(seekPoint);
+			#else
+				if(tFile.isOpen()){tFile.close();}
+				tFile.open(filename);
+				if(tFile.isOpen()){ tFile.seekSet(seekPoint);
+			#endif
+					ramp(1); playing2 = 1;
+				}else{
+					#if defined (debug)
+						Serial.println("Dual Read fail");
+					#endif
+				return;
+				} //open1 = 1; fileName2 = filename;  }
+  		 }
+  		 *TIMSK[tt] |= togByte;
+		//interrupts();
   }else{
-	if(!which){playing = 1;}
-	else{ playing2 = 1; }
+		if(!which){ playing = 1;}
+		else{       playing2 = 1;}
   }
-
-
-
 }
 
 void TMRpcm::ramp(boolean wBuff){
@@ -460,7 +798,8 @@ void TMRpcm::ramp(boolean wBuff){
 
 	#if !defined (MODE2)
 	  if(!wBuff){
-		  sFile.seek(44);
+
+		  seek(44);
 	  	  tmp = sFile.read();
 		  if(volMod >= 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
 		if(tmp > mod){
@@ -470,7 +809,11 @@ void TMRpcm::ramp(boolean wBuff){
 		}
 		whichBuff = 0; buffEmpty[0] = 0;buffCount = 0; //buffEmpty[1] = 0;
 	  }else{
+		  #if !defined (SDFAT)
 		  tFile.seek(44);
+		  #else
+		  tFile.seekSet(44);
+		  #endif
 	  	  tmp = tFile.read();
 		  if(volMod >= 0){ mod = *OCRnB[tt] >> volMod; }else{ mod = *OCRnB[tt] << (volMod*-1); }
 
@@ -483,7 +826,7 @@ void TMRpcm::ramp(boolean wBuff){
   	 }
 	#else //MODE2
 	  if(!wBuff){
-		  sFile.seek(44);
+		  seek(44);
 	  	  tmp = sFile.read();
 		  if(volMod >= 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
 		if(tmp > mod){
@@ -495,7 +838,11 @@ void TMRpcm::ramp(boolean wBuff){
 		}
 		whichBuff = 0; buffEmpty[0] = 0;buffCount = 0; //buffEmpty[1] = 0;
 	  }else{
+		  #if !defined (SDFAT)
 		  tFile.seek(44);
+		  #else
+		  tFile.seekSet(44);
+	  	  #endif
 	  	  tmp = tFile.read();
 		  if(volMod >= 0){ mod = *OCRnB[tt2] >> volMod; }else{ mod = *OCRnB[tt2] << (volMod*-1); }
 
@@ -542,20 +889,27 @@ void TMRpcm::setVolume(char vol, boolean which) {
 volatile boolean clear = 0;
 
 
-
+#if !defined (USE_TIMER2)
 ISR(TIMER1_CAPT_vect){
+#else
+ISR(TIMER2_COMPB_vect){
+#endif
 	//if(playing || playing2){
 
 	b = !whichBuff2; a = !whichBuff;
 	if(buffEmpty[a] || buffEmpty2[b]){
-		*TIMSK[tt] &= ~(_BV(ICIE1));
+		*TIMSK[tt] &= ~togByte;
 		sei();
 
 		if(buffEmpty[a] ){
 
 			if(sFile.read((byte*)buffer[a],buffSize) < buffSize){
 				playing = 0;
+				#if !defined (SDFAT)
 				if(sFile){sFile.close();}
+				#else
+				if(sFile.isOpen()){sFile.close();}
+		  		#endif
   			}
 			buffEmpty[a] = 0;
 
@@ -564,67 +918,140 @@ ISR(TIMER1_CAPT_vect){
 		if(buffEmpty2[b] ){
 			if(tFile.read((byte*)buffer2[b],buffSize) < buffSize){
 				playing2 = 0;
+				#if !defined (SDFAT)
 				if(tFile){tFile.close();}
+				#else
+				if(tFile.isOpen()){tFile.close();}
+		  		#endif
 		  	}
 			buffEmpty2[b] = 0;
 
 	    }
-	if(!playing && !playing2){  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );}
-	else{ 	*TIMSK[tt] |= ( _BV(ICIE1) ); }
-	}
+	if(!playing && !playing2){  *TIMSK[tt] &= ~( togByte | _BV(TOIE1) );}
+	else{ 	*TIMSK[tt] |= togByte;	}
+}
 }
 
 
-
+#if !defined (USE_TIMER2)
 ISR(TIMER1_OVF_vect){
 if(qual){ loadCounter = !loadCounter;if(loadCounter){ return; }}
+#else
 
-    if(playing){
-
-	if(volMod < 0 ){
-		  #if !defined (MODE2)
-	  	  *OCRnA[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
-	  	  #else
-		  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
-	  	  #endif
-	}else{
-		  #if !defined (MODE2)
-		  *OCRnA[tt] = buffer[whichBuff][buffCount] << volMod;
-		  #else
-		  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
-		  #endif
-
-
+ISR(TIMER2_OVF_vect){
+	switch (SR){
+		case 0: if( loadCounter > 0 ){  if( loadCounter >= 3 ){loadCounter=0; return;} loadCounter++; return;} break;
+		case 1: if(loadCounter > 0){ if(loadCounter >= 2){loadCounter=0; return; }loadCounter++;  return;} break;
+		case 2: if(loadCounter > 0){loadCounter = 0;return;}  break;
 	}
- 	  buffCount++;
-  	  if(buffCount >= buffSize){
-  	  	buffCount = 0;
- 	  	buffEmpty[whichBuff] = true;
- 	  	whichBuff = !whichBuff;
-      }
-	}
+	loadCounter++;
+#endif
 
-	if(playing2){
+	if(playing){
+
+	   if(!_2bytes){
 
 		if(volMod < 0 ){
-			#if !defined (MODE2)
-  			*OCRnB[tt] = buffer2[whichBuff2][buffCount2] >> (volMod*-1);
-  			#else
-			*OCRnA[tt2] = *OCRnB[tt2] = buffer2[whichBuff2][buffCount2] >> (volMod*-1);
-  			#endif
+			  #if !defined (MODE2)
+		  	  *OCRnA[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+		  	  #else
+			  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+		  	  #endif
 		}else{
-			#if !defined (MODE2)
-			*OCRnB[tt] = buffer2[whichBuff2][buffCount2] << volMod;
-			#else
-			*OCRnA[tt2] = *OCRnB[tt2] = buffer2[whichBuff2][buffCount2] << volMod;
-			#endif
+			  #if !defined (MODE2)
+			  *OCRnA[tt] = buffer[whichBuff][buffCount] << volMod;
+			  #else
+			  *OCRnA[tt] = *OCRnB[tt] = buffer[whichBuff][buffCount] << volMod;
+			  #endif
+		}
+		buffCount++;
+	    if(buffCount >= buffSize){
+		buffCount = 0;
+		buffEmpty[whichBuff] = true;
+		whichBuff = !whichBuff;
 	    }
-		  buffCount2++;
-		  if(buffCount2 >= buffSize){
-			buffCount2 = 0;
-			buffEmpty2[whichBuff2] = true;
-			whichBuff2 = !whichBuff2;
-		  }
+	  }else{//STEREO
+
+		if(volMod < 0 ){
+			  #if !defined (MODE2)
+		  	  *OCRnA[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+		  	  *OCRnB[tt] = buffer[whichBuff][buffCount+1] >> (volMod*-1);
+		  	  #else
+			  *OCRnA[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
+			  *OCRnB[tt] = buffer[whichBuff][buffCount+1] >> (volMod*-1);
+		  	  #endif
+		}else{
+			  #if !defined (MODE2)
+			  *OCRnA[tt] = buffer[whichBuff][buffCount] << volMod;
+			  *OCRnB[tt] = buffer[whichBuff][buffCount+1] << volMod;
+			  #else
+			  *OCRnA[tt] = buffer[whichBuff][buffCount] << volMod;
+			  *OCRnB[tt] = buffer[whichBuff][buffCount+1] << volMod;
+			  #endif
+
+	    }
+		buffCount+=2;
+	    if(buffCount >= buffSize){
+		buffCount = 0;
+		buffEmpty[whichBuff] = true;
+		whichBuff = !whichBuff;
+	    }
+	  }
+
+	}
+
+
+
+	if(playing2){
+		if(!_2bytes){
+			if(volMod < 0 ){
+				#if !defined (MODE2)
+	  			*OCRnB[tt] = buffer2[whichBuff2][buffCount2] >> (volMod*-1);
+	  			#else
+				*OCRnA[tt2] = *OCRnB[tt2] = buffer2[whichBuff2][buffCount2] >> (volMod*-1);
+	  			#endif
+			}else{
+				#if !defined (MODE2)
+				*OCRnB[tt] = buffer2[whichBuff2][buffCount2] << volMod;
+				#else
+				*OCRnA[tt2] = *OCRnB[tt2] = buffer2[whichBuff2][buffCount2] << volMod;
+				#endif
+		    }
+			  buffCount2++;
+			  if(buffCount2 >= buffSize){
+				buffCount2 = 0;
+				buffEmpty2[whichBuff2] = true;
+				whichBuff2 = !whichBuff2;
+			  }
+
+
+	    }else{
+			if(volMod < 0 ){
+				#if !defined (MODE2)
+	  			*OCRnB[tt] = buffer2[whichBuff2][buffCount2] >> (volMod*-1);
+		  		*OCRnA[tt] = buffer2[whichBuff2][buffCount2+1] >> (volMod*-1);
+	  			#else
+				*OCRnA[tt2] = buffer2[whichBuff2][buffCount2] >> (volMod*-1);
+				*OCRnB[tt2] = buffer2[whichBuff2][buffCount2+1] >> (volMod*-1);
+	  			#endif
+			}else{
+				#if !defined (MODE2)
+				*OCRnB[tt] = buffer2[whichBuff2][buffCount2] << volMod;
+				*OCRnA[tt] = buffer2[whichBuff2][buffCount2+1] << volMod;
+				#else
+				*OCRnA[tt2] = buffer2[whichBuff2][buffCount2] << volMod;
+				*OCRnB[tt2] = buffer2[whichBuff2][buffCount2+1] << volMod;
+				#endif
+		    }
+			  buffCount2 += 2;
+				  if(buffCount2 >= buffSize){
+				buffCount2 = 0;
+				buffEmpty2[whichBuff2] = true;
+				whichBuff2 = !whichBuff2;
+			  }
+
+
+		}
 	}
 
 }
@@ -632,38 +1059,54 @@ if(qual){ loadCounter = !loadCounter;if(loadCounter){ return; }}
 
 void TMRpcm::stopPlayback(boolean which){
 	if(!playing && !playing2){
-		*TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
+		*TIMSK[tt] &= ~( togByte | _BV(TOIE1) );
 	}
-	if(!which){ playing = 0; if(sFile){sFile.close();} }else{ playing2 = 0; if(tFile){tFile.close();}}
-
-
+	if(!which){
+		playing = 0;
+		if(ifOpen()){sFile.close();}
+	}else{
+		playing2 = 0;
+		#if !defined (SDFAT)
+		if(tFile){tFile.close();}
+		#else
+		if(tFile.isOpen()){tFile.close();}
+		#endif
+	}
 }
 
 void TMRpcm::disable(){
-  playing = 0; playing2 = 0;
-  *TIMSK[tt] &= ~( _BV(ICIE1) | _BV(TOIE1) );
-  if(sFile){sFile.close();}
-  if(tFile){tFile.close();}
-  int current = *OCRnA[tt];
-  int currentB = *OCRnB[tt];
-  for(int i=0; i < resolution; i++){
-	*OCRnB[tt] = constrain((current + i),0,resolution);
-	*OCRnA[tt] = constrain((currentB - i),0,resolution);
-	delayMicroseconds(50);
-  }
-  #if defined (MODE2)
-  current = *OCRnA[tt2];
-  currentB = *OCRnB[tt2];
-  for(int i=0; i < resolution; i++){
-  	*OCRnB[tt2] = constrain((current + i),0,resolution);
-  	*OCRnA[tt2] = constrain((currentB - i),0,resolution);
-  	delayMicroseconds(50);
-  }
-  *TCCRnA[tt2] = *TCCRnB[tt2] = 0;
-  #endif
-  rampUp = 1;
-  *TCCRnA[tt] = *TCCRnB[tt] = 0;
-
+	playing = 0; playing2 = 0;
+	*TIMSK[tt] &= ~( togByte | _BV(TOIE1) );
+	if(ifOpen()){sFile.close();
+		#if !defined (SDFAT)
+			if(tFile){tFile.close();}
+		#else
+			if(tFile.isOpen()){tFile.close();}
+		#endif
+	int current = *OCRnA[tt];
+	int currentB = *OCRnB[tt];
+	for(int i=0; i < resolution; i++){
+	#if defined(rampMega)
+		*OCRnB[tt] = constrain((current + i),0,resolution);
+		*OCRnA[tt] = constrain((currentB - i),0,resolution);
+	#else
+		*OCRnB[tt] = constrain((current - i),0,resolution);
+		*OCRnA[tt] = constrain((currentB - i),0,resolution);
+	#endif
+		delayMicroseconds(50);
+	}
+	#if defined (MODE2)
+		current = *OCRnA[tt2];
+		currentB = *OCRnB[tt2];
+		for(int i=0; i < resolution; i++){
+			*OCRnB[tt2] = constrain((current + i),0,resolution);
+		  	*OCRnA[tt2] = constrain((currentB - i),0,resolution);
+		  	delayMicroseconds(50);
+		}
+  		*TCCRnA[tt2] = *TCCRnB[tt2] = 0;
+  	#endif
+    rampUp = 1;
+    *TCCRnA[tt] = *TCCRnB[tt] = 0;
 }
 
 
@@ -677,3 +1120,442 @@ boolean TMRpcm::isPlaying(boolean which){
 }
 
 #endif
+
+
+
+
+
+//****************** Metadata Features ****************************
+//****************** ID3 and LIST Tags ****************************
+
+
+
+byte TMRpcm::getInfo(char* filename, char* tagData, byte infoNum){
+	byte gotInfo = 0;
+	if( (gotInfo = metaInfo(1,filename, tagData, infoNum)) < 1){
+		gotInfo = metaInfo(0,filename, tagData, infoNum);
+	}
+	return gotInfo;
+
+}
+
+byte TMRpcm::listInfo(char* filename, char* tagData, byte infoNum){
+	return metaInfo(0, filename, tagData, infoNum);
+
+}
+
+
+
+//http://id3.org/id3v2.3.0
+byte TMRpcm::id3Info(char* filename, char* tagData, byte infoNum){
+	return metaInfo(1, filename, tagData, infoNum);
+}
+
+
+#if !defined (SDFAT)
+boolean TMRpcm::searchMainTags(File xFile, char *datStr){
+	xFile.seek(36);
+#else
+unsigned long TMRpcm::searchMainTags(SdFile xFile, char *datStr){
+	xFile.seekSet(36);
+#endif
+		boolean found = 0;
+	    char dChars[4] = {'d','a','t','a'};
+		char tmpChars[4];
+
+		//xFile.seek(36);
+	    xFile.read((char*)tmpChars,4);
+	    for (byte i =0; i<4; i++){
+			if(tmpChars[i] != dChars[i]){
+				#if !defined (SDFAT)
+				 	xFile.seek(40);
+				 	unsigned int siz = xFile.read(); siz = (xFile.read() << 8 | siz)+2;
+				 	xFile.seek(xFile.position() + siz);
+				#else
+					xFile.seekSet(40);
+					unsigned int siz = xFile.read(); siz = (xFile.read() << 8 | siz)+2;
+				 	xFile.seekSet(xFile.curPosition() + siz);
+				#endif
+			 	xFile.read((char*)tmpChars,4);
+ 	     		for (byte i =0; i<4; i++){
+					if(tmpChars[i] != dChars[i]){
+						return 0;
+					}
+		 		}
+			}
+		 }
+
+		unsigned long tmpp=0;
+		unsigned long daBytes = xFile.read();
+	    for (byte i =8; i<32; i+=8){
+			tmpp = xFile.read();
+			daBytes = tmpp << i | daBytes;
+		}
+
+		#if !defined (SDFAT)
+			daBytes = xFile.position() + daBytes;
+			if(xFile.size() == daBytes){ return 0; }
+		#else
+			daBytes = xFile.curPosition() + daBytes;
+			if(xFile.fileSize() == daBytes){ return 0; }
+		#endif
+
+	//if(found == 0){ //Jump to file end - 1000 and search for ID3 or LIST
+	#if !defined (SDFAT)
+		xFile.seek(daBytes);
+	#else
+		xFile.seekSet(daBytes);
+	#endif
+
+		while(xFile.available() > 5){
+			if(xFile.read() == datStr[0] && xFile.peek() == datStr[1]){
+				xFile.read((char*)tmpChars,3);
+	 			if( tmpChars[1] == datStr[2] &&  tmpChars[2] == datStr[3] ){
+						found = 1;
+						#if !defined (SDFAT)
+							return 1; break;
+						#else
+							return xFile.curPosition();
+						#endif
+				}else{
+					#if !defined (SDFAT)
+						xFile.seek(xFile.position() - 1 - 4); //pos - tagSize
+					#else
+						unsigned long pos = xFile.curPosition()-1;
+						xFile.seekSet(pos - 4);
+					#endif
+				}
+			}
+		}
+		return 0;
+
+}
+
+
+
+byte TMRpcm::metaInfo(boolean infoType, char* filename, char* tagData, byte whichInfo){
+
+
+	if(ifOpen()){ noInterrupts();}
+
+	#if !defined (SDFAT)
+		File xFile;
+		xFile = SD.open(filename);
+		xFile.seek(36);
+	#else
+		SdFile xFile;
+		xFile.open(filename);
+		xFile.seekSet(36);
+	#endif
+
+	boolean found=0;
+		char* datStr = "LIST";
+		if(infoType == 1){datStr = "ID3 "; datStr[3] = 3;}
+		char tmpChars[4];
+
+	if(infoType == 0){ //if requesting LIST info, check for data at beginning of file first
+		xFile.read((char*)tmpChars,4);
+		for (byte i=0; i<4; i++){ //4 tagSize
+			if(tmpChars[i] != datStr[i]){
+				break;
+		  	}else if(i==3){
+				found = 1;
+		  	}
+		}
+	}
+	if(found == 0){
+		#if !defined (SDFAT)
+			found = searchMainTags(xFile, datStr);
+		#else
+			unsigned long pos = searchMainTags(xFile, datStr);
+			xFile.seekSet(pos);
+			if(pos > 0){ found = 1; }
+		#endif
+	}
+
+//** This section finds the starting point and length of the tag info
+	if(found == 0){ xFile.close(); return 0; }
+
+	unsigned long listEnd;
+	unsigned int listLen;
+	char* tagNames[] = {"INAM","IART","IPRD"};
+
+	if(infoType == 0){ //LIST format
+		listLen = xFile.read(); listLen = xFile.read() << 8 | listLen;
+		#if !defined (SDFAT)
+			xFile.seek(xFile.position() +6);
+			listEnd = xFile.position() + listLen;
+		#else
+			xFile.seekSet(xFile.curPosition() +6);
+			listEnd = xFile.curPosition() + listLen;
+		#endif
+
+	}else{				//ID3 format
+
+		#if !defined (SDFAT)
+			xFile.seek(xFile.position() + 5);
+		#else
+			xFile.seekSet(xFile.curPosition() + 5);
+		#endif
+			listLen = xFile.read() << 7 | listLen; listLen = xFile.read() | listLen;
+			tagNames[0] = "TPE1"; tagNames[1] ="TIT2"; tagNames[2] ="TALB";
+		#if !defined (SDFAT)
+			listEnd = xFile.position() + listLen;
+		#else
+			listEnd = xFile.curPosition() + listLen;
+		#endif
+	}
+
+	char tgs[4];
+	unsigned int len = 0;
+	unsigned long tagPos = 0;
+
+//** This section reads the tags and gets the size of the tag data and its position
+//** Should work with very long tags if a big enough buffer is provided
+#if !defined (SDFAT)
+	while(xFile.position() < listEnd){
+#endif
+#if defined (SDFAT)
+	while(xFile.curPosition() < listEnd){
+#endif
+
+		xFile.read((char*)tgs,4);
+
+		if(infoType == 0){ //LIST
+			len = xFile.read()-1;
+			len = xFile.read() << 8 | len;
+			#if !defined (SDFAT)
+				xFile.seek(xFile.position()+2);
+			#else
+				xFile.seekSet(xFile.curPosition()+2);
+			#endif
+		}else{ 				//ID3
+			#if !defined (SDFAT)
+				xFile.seek(xFile.position()+3);
+			#else
+				xFile.seekSet(xFile.curPosition()+3);
+			#endif
+			len = xFile.read();
+			len = xFile.read() << 8 | len;
+			len = (len-3)/2;
+			#if !defined (SDFAT)
+				tagPos = xFile.position() + 4;
+				xFile.seek(tagPos);
+			#else
+			    xFile.seekSet(xFile.curPosition() +4);
+				tagPos = xFile.curPosition();
+			#endif
+
+		}
+
+		found =0;
+	//** This section checks to see if the tag we found is the one requested
+	//** If so, it loads the data into the buffer
+		for(int p=0; p<4;p++){
+			if(tgs[p] != tagNames[whichInfo][p]){
+				break;
+			}else{
+				if(p==3){
+					if(infoType == 1){
+						byte junk;
+						for(byte j=0; j<len; j++){
+							tagData[j] = xFile.read();
+							junk=xFile.read();
+						}
+					}else{
+						xFile.read((char*)tagData,len);
+					}
+					tagData[len] = '\0';
+					xFile.close();
+					if(ifOpen()){ interrupts();}
+ 					return len;
+				}
+			}
+		}
+
+		if(found){break;}
+
+	//**This section jumps to the next tag position if the requested tag wasn't found
+	#if !defined (SDFAT)
+		if(infoType == 0){
+			if(!found){	xFile.seek(xFile.position()+len);}
+			while(xFile.peek() == 0){xFile.read();}
+		}else{
+			if(!found){	xFile.seek(tagPos+len); }
+			while(xFile.peek() != 'T'){xFile.read();}
+		}
+	#else
+		if(infoType == 0){
+			if(!found){	xFile.seekSet(xFile.curPosition()+len);}
+			while(xFile.peek() == 0){xFile.read();}
+		}else{
+			if(!found){	xFile.seekSet(tagPos+len); }
+			while(xFile.peek() != 'T'){xFile.read();}
+		}
+	#endif
+
+
+ 	}
+ 	xFile.close();
+ 	if(ifOpen()){ interrupts();}
+ 	return len;
+}
+
+
+/*********************************************************************************
+********************** DIY Digital Audio Generation ******************************/
+
+
+void TMRpcm::finalizeWavTemplate(char* filename){
+	disable();
+
+	unsigned long fSize = 0;
+
+  #if !defined (SDFAT)
+	if(!SD.exists(filename)){
+		sFile = SD.open(filename,FILE_WRITE);
+	}else{
+	//if(SD.remove(filename)){
+		sFile = SD.open(filename,FILE_WRITE);
+		sFile.seek(0);
+	}
+    if(!sFile){
+		#if defined (debug)
+			Serial.println("fl");
+		#endif
+		return;
+	}
+	fSize = sFile.size()-8;
+
+  #else
+   	if(!sFile.exists(filename)){
+		sFile.open(filename,O_WRITE | O_CREAT);
+	}else{
+	//if(sFile.remove(filename)){
+		sFile.open(filename,O_WRITE | O_CREAT);
+		sFile.seekSet(0);
+	}
+    if(!sFile.isOpen()){
+		#if defined (debug)
+			Serial.println("failed to open 4 writing");
+		#endif
+		return; }
+    fSize = sFile.fileSize()-8;
+
+  #endif
+
+
+
+	seek(4);
+	sFile.write(lowByte(fSize));
+	sFile.write(highByte(fSize));
+	byte tmp = fSize >> 16;
+	sFile.write(tmp);
+	tmp = fSize >> 24;
+	sFile.write(tmp);
+
+	seek(40);
+	fSize = fSize - 36;
+	sFile.write(lowByte(fSize));
+	sFile.write(highByte(fSize));
+	tmp = fSize >> 16;
+	sFile.write(tmp);
+	tmp = fSize >> 24;
+	sFile.write(tmp);
+
+	sFile.close();
+
+	#if !defined (SDFAT)
+		sFile = SD.open(filename);
+	#else
+		sFile.open(filename);
+	#endif
+
+	if(ifOpen()){
+		#if defined (debug)
+		    while (fPosition() < 44) {
+		      Serial.print(sFile.read(),HEX);
+		      Serial.print(":");
+		   	}
+		#endif
+	   	//Serial.println(sFile.size());
+    	sFile.close();
+	}
+
+}
+
+void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
+	disable();
+	//File wFile;
+
+  #if !defined (SDFAT)
+	if(!SD.exists(filename)){
+		sFile = SD.open(filename,FILE_WRITE);
+	}else
+	if(SD.remove(filename)){
+		sFile = SD.open(filename,FILE_WRITE);
+	}else{ Serial.println("rmv fail"); return; }
+
+	byte monoStereo = 1;
+	byte bps = 8;
+	if(!sFile){
+		#if defined (debug)
+			Serial.println("failed to open 4 writing");
+			return;
+		#endif
+	}else{
+
+  #else
+   	sFile.open(filename,O_CREAT | O_TRUNC |O_WRITE);
+	byte monoStereo = 1;
+	byte bps = 8;
+	if(!sFile.isOpen()){
+		#if defined (debug)
+			Serial.println("failed to open 4 writing");
+			return;
+		#endif
+	}else{
+
+  #endif
+
+		sFile.print("RIFF    WAVEfmt ");
+		byte tmp = 16;
+		sFile.write(tmp); //Subchunk1Size
+		tmp = 0; sFile.write(tmp);sFile.write(tmp);sFile.write(tmp);
+		tmp = 0;
+		sFile.write(1); //audio format
+		sFile.write(tmp);
+		sFile.write(1); //mono = 1, stereo = 2;
+		sFile.write(tmp);
+		sFile.write(lowByte(sampleRate));
+		sFile.write(highByte(sampleRate));
+		sFile.write(tmp); sFile.write(tmp);
+		unsigned int byteRate = (sampleRate/8)*monoStereo*bps;
+		sFile.write(lowByte(byteRate));
+		sFile.write(highByte(byteRate));
+		sFile.write(tmp);sFile.write(tmp);
+		byte blockAlign = monoStereo * (bps/8);
+		sFile.write(blockAlign);
+		sFile.write(tmp);
+		tmp = 8;
+		sFile.write(tmp); //8-bit audio
+		tmp = 0;
+		sFile.write(tmp);
+		sFile.print("data    ");
+
+		sFile.close();
+
+		//Serial.println("written:");
+
+
+
+		/*wFile = SD.open(filename);
+		if(wFile){
+		    while (sFile.available() > 0) {
+		      Serial.print(sFile.read(),HEX);
+		      Serial.print(":");
+	    	}
+    		sFile.close();
+		}*/
+	}
+}

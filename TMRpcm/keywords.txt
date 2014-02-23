@@ -9,4 +9,11 @@ speakerPin	KEYWORD2
 quality	KEYWORD2
 isPlaying	KEYWORD2
 pcmRF	KEYWORD1
-
+setVolume	KEYWORD2
+listInfo	KEYWORD2
+getInfo	KEYWORD2
+id3Info	KEYWORD2
+createWavTemplate	KEYWORD2
+finalizeWavTemplate	KEYWORD2
+wav	KEYWORD1
+audio	KEYWORD1
