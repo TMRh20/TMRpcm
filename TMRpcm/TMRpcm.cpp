@@ -513,7 +513,7 @@ ISR(TIMER2_COMPB_vect){
 		//byte tz;
 		//if( tz = sFile.read((byte*)buffer[a],buffSize) <= dataEnd){
 		sFile.read((byte*)buffer[a],buffSize);
-		if( sFile.available() <= buffSize){
+		if( sFile.available() <= dataEnd){
 		  	playing = 0;
 		  	*TIMSK[tt] &= ~( togByte | _BV(TOIE1) );
 		  	#if !defined (SDFAT)
