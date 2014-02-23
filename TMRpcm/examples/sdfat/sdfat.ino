@@ -4,7 +4,7 @@ Read time and program space are reduced by using SDFAT directly
 
 Requirements:
 The SDFAT library must be installed. See http://code.google.com/p/sdfatlib/ 
-The line #define SDFAT MUST be uncommented in TMRpcm.h
+The line #define SDFAT MUST be uncommented in pcmConfig.h
 
 "error: 'File' has not been declared" means you need to read the above text
 */
