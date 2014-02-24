@@ -34,6 +34,10 @@ Blog: https://tmrh20.blogspot.com/
   /* HANDLE_TAGS - This options allows proper playback of WAV files with embedded metadata*/
 //#define HANDLE_TAGS
 
+  /*Ethernet shield support etc. The library outputs on both timer pins, 9 and 10 on Uno by default. Uncommenting this
+    will disable output on the 2nd timer pin and should allow it to function with shields etc that use Uno pin 10 (TIMER1 COMPB).*/
+//#define DISABLE_SPEAKER2
+
   /* Use 8-bit TIMER2 - If using an UNO, Nano, etc and need TIMER1 for other things*/
 //#define USE_TIMER2
 

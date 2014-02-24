@@ -28,9 +28,15 @@
 		volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A,&TCCR4A,&TCCR5A};
 		volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B,&TCCR4B,&TCCR5B};
 		volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A,&OCR4A,&OCR5A};
-		volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
 		volatile unsigned int *ICRn[] = {&ICR1, &ICR3,&ICR4,&ICR5};
 		volatile unsigned int *TCNT[] = {&TCNT1,&TCNT3,&TCNT4,&TCNT5};
+
+		#if !defined (DISABLE_SPEAKER2)
+			volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B,&OCR4B,&OCR5B};
+		#else
+		 	volatile unsigned int one, two, three, four;
+			volatile unsigned int *OCRnB[] ={&one,&two,&three,&four};
+		#endif
 
 		ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
 		ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
@@ -54,9 +60,15 @@
 		volatile byte *TCCRnA[] = {&TCCR1A,&TCCR3A};
 		volatile byte *TCCRnB[] = {&TCCR1B, &TCCR3B};
 		volatile unsigned int *OCRnA[] = {&OCR1A,&OCR3A};
-		volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B};
 		volatile unsigned int *ICRn[]	= {&ICR1, &ICR3};
 		volatile unsigned int *TCNT[] = {&TCNT1,&TCNT3};
+
+		#if !defined (DISABLE_SPEAKER2)
+			volatile unsigned int *OCRnB[] = {&OCR1B, &OCR3B};
+		#else
+		 	volatile unsigned int one, two;
+			volatile unsigned int *OCRnB[] ={&one,&two};
+		#endif
 
 		ISR(TIMER3_OVF_vect, ISR_ALIASOF(TIMER1_OVF_vect));
 		ISR(TIMER3_CAPT_vect, ISR_ALIASOF(TIMER1_CAPT_vect));
@@ -73,6 +85,14 @@
 		volatile unsigned int *OCRnB[] = {&OCR1B};
 		volatile unsigned int *ICRn[]	= {&ICR1};
 		volatile unsigned int *TCNT[] = {&TCNT1};
+
+		#if !defined (DISABLE_SPEAKER2)
+			volatile unsigned int *OCRnB[] = {&OCR1B};
+		#else
+		 	volatile unsigned int one;
+			volatile unsigned int *OCRnB[] ={&one};
+		#endif
+
 	#endif
 
 
@@ -105,6 +125,7 @@
 
 
 #endif
+
 
 
 
