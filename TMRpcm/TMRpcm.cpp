@@ -82,7 +82,6 @@
 		volatile byte *TCCRnA[] = {&TCCR1A};
 		volatile byte *TCCRnB[] = {&TCCR1B};
 		volatile unsigned int *OCRnA[] = {&OCR1A};
-		volatile unsigned int *OCRnB[] = {&OCR1B};
 		volatile unsigned int *ICRn[]	= {&ICR1};
 		volatile unsigned int *TCNT[] = {&TCNT1};
 
