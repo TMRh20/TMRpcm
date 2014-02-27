@@ -143,6 +143,9 @@
 	SdFile tFile;
 	#endif
 #endif
+#if defined (ENABLE_RECORDING)
+	boolean recording = 0;
+#endif
 
 //*********** Standard Global Variables ***************
 volatile unsigned int dataEnd;
@@ -156,7 +159,14 @@ volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, playing = 0;
 boolean paused = 0, qual = 0, rampUp = 1, _2bytes=0;
 char volMod=0;
 volatile byte buffer[2][buffSize];
-volatile byte buffCount = 0;
+
+#if defined (ENABLE_RECORDING)
+volatile unsigned int buffCount = 0;
+Sd2Card card1;
+#else
+byte buffCount = 0;
+#endif
+
 byte tt;
 
 #if !defined (SDFAT)
@@ -186,11 +196,8 @@ void TMRpcm::timerSt(){
 #else //Using TIMER2
 
 void TMRpcm::timerSt(){
-	#if defined (EXT_CRYSTAL)
-		ASSR |= _BV(AS2);
-	#endif
 	*TCCRnA[tt] = _BV(WGM21) | _BV(WGM20) | _BV(COM2B1); //Fast PWM with 0xFF (255) top
-	*TCCRnB[tt] = _BV(CS20);
+	*TCCRnB[tt] = _BV(CS21);
 }
 #endif
 
@@ -275,9 +282,11 @@ boolean TMRpcm::wavInfo(char* filename){
     SAMPLE_RATE = sFile.read() << 8 | SAMPLE_RATE;
 
     #if defined (USE_TIMER2)
-    	if(SAMPLE_RATE < 20000){ SR = 0; }
-    	else if(SAMPLE_RATE < 28000){ SR = 1; }
-    	else{ SR = 2; }
+
+    	if(SAMPLE_RATE < 9000 ){ SR = 0; }
+    	else if(SAMPLE_RATE < 20000){ SR = 1; }
+    	else if(SAMPLE_RATE < 28000){ SR = 2; }
+    	else{ SR = 3; }
     #endif
 	#if defined (STEREO_OR_16BIT)
 	    //verify that Bits Per Sample is 8 (0-255)
@@ -448,7 +457,15 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
 #else
-	resolution = 255;
+
+	if(SAMPLE_RATE > 7000 && SAMPLE_RATE< 9000){
+		*TCCRnB[tt] &= ~_BV(CS20);
+		*TCCRnB[tt] |= _BV(CS21);
+	}else{
+		*TCCRnB[tt] &= ~_BV(CS21);
+		*TCCRnB[tt] |= _BV(CS20);
+		resolution = 255;
+	}
 #endif
     byte tmp = (sFile.read() + sFile.peek()) / 2;
 
@@ -474,14 +491,14 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
 	#endif
 
 	rampUp = 0;
-	byte mod;
+	unsigned int mod;
 	if(volMod > 0){ mod = *OCRnA[tt] >> volMod; }else{ mod = *OCRnA[tt] << (volMod*-1); }
 	if(tmp > mod){
-		for(byte i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[0][i] = mod; }
-		for(byte i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[1][i] = mod; }
+		for(unsigned int i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[0][i] = mod; }
+		for(unsigned int i=0; i<buffSize; i++){ mod = constrain(mod+1,mod, tmp); buffer[1][i] = mod; }
 	}else{
-		for(byte i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp ,mod); buffer[0][i] = mod; }
-		for(byte i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp, mod); buffer[1][i] = mod; }
+		for(unsigned int i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp ,mod); buffer[0][i] = mod; }
+		for(unsigned int i=0; i<buffSize; i++){ mod = constrain(mod-1,tmp, mod); buffer[1][i] = mod; }
 	}
 
     whichBuff = 0; buffEmpty[0] = 0; buffEmpty[1] = 0; buffCount = 0;
@@ -514,6 +531,20 @@ volatile boolean a;
 
 #if !defined (USE_TIMER2) //Not using TIMER2
 ISR(TIMER1_CAPT_vect){
+
+	#if defined (ENABLE_RECORDING)
+		if(recording == 1){
+  			if(buffEmpty[!whichBuff] == 0){
+     	 		a = !whichBuff;
+     			TIMSK1 &= ~(_BV(ICIE1));
+     			sei();
+     			sFile.write((byte*)buffer[a], buffSize );
+     			buffEmpty[a] = 1;
+     			TIMSK1 |= _BV(ICIE1);
+ 			}
+		 	return;
+		 }
+	#endif
 #else 					  //Using TIMER2
 ISR(TIMER2_COMPB_vect){
 #endif
@@ -530,8 +561,6 @@ ISR(TIMER2_COMPB_vect){
 		a = !whichBuff;
 		*TIMSK[tt] &= ~togByte;
 		sei();
-		//byte tz;
-		//if( tz = sFile.read((byte*)buffer[a],buffSize) <= dataEnd){
 		sFile.read((byte*)buffer[a],buffSize);
 		if( sFile.available() <= dataEnd){
 		  	playing = 0;
@@ -554,9 +583,10 @@ ISR(TIMER2_COMPB_vect){
 
 		//TIMER2 runs at 16mhz/255 (62,745Hz), so the timing for sample rate must be manually counted
 		switch (SR){
-			case 2: if(loadCounter){loadCounter = 0;return;}  break;
-			case 0: if(loadCounter){ if(loadCounter >= 3){loadCounter=0; return;} loadCounter++; return;} break;
-			case 1: if(loadCounter){ if(loadCounter >= 2){loadCounter=0; return; }loadCounter++;  return;} break;
+			case 0: break;
+			case 1: if(loadCounter){loadCounter = 0;return;}  break;
+			case 3: if(loadCounter){ if(loadCounter >= 3){loadCounter=0; return;} loadCounter++; return;} break;
+			case 2: if(loadCounter){ if(loadCounter >= 2){loadCounter=0; return; }loadCounter++;  return;} break;
 		}
 		loadCounter++;
 
@@ -572,7 +602,20 @@ ISR(TIMER2_COMPB_vect){
 	}
 
 #else
-	ISR(TIMER1_OVF_vect){
+ISR(TIMER1_OVF_vect){
+	#if defined (ENABLE_RECORDING)
+		if(recording){
+ 			buffer[whichBuff][buffCount] = ADCH;
+	 		buffCount++;
+	 		if(buffCount >= buffSize){
+	    		buffCount = 0;
+	    		buffEmpty[!whichBuff] = 0;
+	  			whichBuff = !whichBuff;
+	  		}
+  		return;
+		}
+
+	#endif
 	  if(qual){loadCounter = !loadCounter;if(loadCounter){ return; } }
 
 	#if defined (STEREO_OR_16BIT)
@@ -1432,13 +1475,8 @@ void TMRpcm::finalizeWavTemplate(char* filename){
 	unsigned long fSize = 0;
 
   #if !defined (SDFAT)
-	if(!SD.exists(filename)){
 		sFile = SD.open(filename,FILE_WRITE);
-	}else{
-	//if(SD.remove(filename)){
-		sFile = SD.open(filename,FILE_WRITE);
-		sFile.seek(0);
-	}
+
     if(!sFile){
 		#if defined (debug)
 			Serial.println("fl");
@@ -1448,16 +1486,11 @@ void TMRpcm::finalizeWavTemplate(char* filename){
 	fSize = sFile.size()-8;
 
   #else
-   	if(!sFile.exists(filename)){
-		sFile.open(filename,O_WRITE | O_CREAT);
-	}else{
-	//if(sFile.remove(filename)){
-		sFile.open(filename,O_WRITE | O_CREAT);
-		sFile.seekSet(0);
-	}
+		sFile.open(filename,O_WRITE );
+
     if(!sFile.isOpen()){
 		#if defined (debug)
-			Serial.println("failed to open 4 writing");
+			Serial.println("failed to finalize");
 		#endif
 		return; }
     fSize = sFile.fileSize()-8;
@@ -1466,25 +1499,16 @@ void TMRpcm::finalizeWavTemplate(char* filename){
 
 
 
-	seek(4);
-	sFile.write(lowByte(fSize));
-	sFile.write(highByte(fSize));
-	byte tmp = fSize >> 16;
-	sFile.write(tmp);
-	tmp = fSize >> 24;
-	sFile.write(tmp);
-
+	seek(4); byte data[4] = {lowByte(fSize),highByte(fSize), fSize >> 16,fSize >> 24};
+	sFile.write(data,4);
+	byte tmp;
 	seek(40);
 	fSize = fSize - 36;
-	sFile.write(lowByte(fSize));
-	sFile.write(highByte(fSize));
-	tmp = fSize >> 16;
-	sFile.write(tmp);
-	tmp = fSize >> 24;
-	sFile.write(tmp);
-
+	data[0] = lowByte(fSize); data[1]=highByte(fSize);data[2]=fSize >> 16;data[3]=fSize >> 24;
+	sFile.write((byte*)data,4);
 	sFile.close();
 
+	#if defined (debug)
 	#if !defined (SDFAT)
 		sFile = SD.open(filename);
 	#else
@@ -1492,90 +1516,192 @@ void TMRpcm::finalizeWavTemplate(char* filename){
 	#endif
 
 	if(ifOpen()){
-		#if defined (debug)
+
 		    while (fPosition() < 44) {
 		      Serial.print(sFile.read(),HEX);
 		      Serial.print(":");
 		   	}
-		#endif
+		   	Serial.println("");
+
 	   	//Serial.println(sFile.size());
     	sFile.close();
 	}
-
+	#endif
 }
+
+
+// number of blocks in the contiguous file
+#define BLOCK_COUNT 10000UL
+//#define BLOCK_COUNT 2000UL
+
 
 void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
 	disable();
-	//File wFile;
+
+ /*   SdVolume vol;
+	SdFile rut;
+	SdFile fil;
+
+	char* fNam = filename;
+	uint32_t bgnBlock, endBlock;
+
+	if (!card1.init(SPI_FULL_SPEED,53)) {
+	    return;
+  	}else{Serial.println("SD OK");}
+
+	if(!vol.init(&card1)){Serial.println("card failed"); }
+	if (!rut.openRoot(&vol)) {Serial.println("openRoot failed"); }
+	SdFile::remove(&rut, fNam);
+
+	if (!fil.createContiguous(&rut, fNam, 512UL*BLOCK_COUNT)) {
+	    Serial.println("createContiguous failed");
+	  }
+	  // get the location of the file's blocks
+	  if (!fil.contiguousRange(&bgnBlock, &endBlock)) {
+	    Serial.println("contiguousRange failed");
+	  }
+	  if (!card1.erase(bgnBlock, endBlock)) Serial.println("card.erase failed");
+	  //if (!card1.writeStart(bgnBlock, BLOCK_COUNT)) {
+	  //    Serial.println("writeStart failed");
+	  //  }
+
+	 //sdCache = reinterpret_cast<uint8_t*>(fil->vol()->cacheClear());
+
+	//buffCount+=44;
+	rut.close();
+	fil.close();*/
+
 
   #if !defined (SDFAT)
-	if(!SD.exists(filename)){
 		sFile = SD.open(filename,FILE_WRITE);
-	}else
-	if(SD.remove(filename)){
-		sFile = SD.open(filename,FILE_WRITE);
-	}else{ Serial.println("rmv fail"); return; }
-
-	byte monoStereo = 1;
-	byte bps = 8;
 	if(!sFile){
 		#if defined (debug)
 			Serial.println("failed to open 4 writing");
-			return;
 		#endif
+		return;
 	}else{
 
   #else
-   	sFile.open(filename,O_CREAT | O_TRUNC |O_WRITE);
-	byte monoStereo = 1;
-	byte bps = 8;
+   	sFile.open(filename,O_CREAT | O_WRITE);
 	if(!sFile.isOpen()){
 		#if defined (debug)
 			Serial.println("failed to open 4 writing");
-			return;
 		#endif
+		return;
 	}else{
 
   #endif
-
-		sFile.print("RIFF    WAVEfmt ");
-		byte tmp = 16;
-		sFile.write(tmp); //Subchunk1Size
-		tmp = 0; sFile.write(tmp);sFile.write(tmp);sFile.write(tmp);
-		tmp = 0;
-		sFile.write(1); //audio format
-		sFile.write(tmp);
-		sFile.write(1); //mono = 1, stereo = 2;
-		sFile.write(tmp);
-		sFile.write(lowByte(sampleRate));
-		sFile.write(highByte(sampleRate));
-		sFile.write(tmp); sFile.write(tmp);
-		unsigned int byteRate = (sampleRate/8)*monoStereo*bps;
-		sFile.write(lowByte(byteRate));
-		sFile.write(highByte(byteRate));
-		sFile.write(tmp);sFile.write(tmp);
-		byte blockAlign = monoStereo * (bps/8);
-		sFile.write(blockAlign);
-		sFile.write(tmp);
-		tmp = 8;
-		sFile.write(tmp); //8-bit audio
-		tmp = 0;
-		sFile.write(tmp);
-		sFile.print("data    ");
-
+  		//Serial.print("Sr: ");
+  		//Serial.println(sampleRate);
+  		seek(0);
+		byte data[] = {16,0,0,0,1,0,1,0,lowByte(sampleRate),highByte(sampleRate)};
+		sFile.write((byte*)"RIFF    WAVEfmt ",16);
+		sFile.write((byte*)data,10);
+		//unsigned int byteRate = (sampleRate/8)*monoStereo*8;
+		//byte blockAlign = monoStereo * (bps/8); //monoStereo*(bps/8)
+		data[0] = 0; data[1] = 0; data[2] = lowByte(sampleRate); data[3] =highByte(sampleRate);//Should be byteRate
+		data[4]=0;data[5]=0;data[6]=1; //BlockAlign
+		data[7]=0;data[8]=8;data[9]=0;
+		sFile.write((byte*)data,10);
+		sFile.write((byte*)"data    ",8);
+		//Serial.print("siz");
+		//Serial.println(sFile.size());
 		sFile.close();
 
-		//Serial.println("written:");
-
-
-
-		/*wFile = SD.open(filename);
-		if(wFile){
-		    while (sFile.available() > 0) {
-		      Serial.print(sFile.read(),HEX);
-		      Serial.print(":");
-	    	}
-    		sFile.close();
-		}*/
 	}
 }
+
+#if defined (ENABLE_RECORDING)
+
+void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin){
+
+	createWavTemplate(fileName, SAMPLE_RATE);
+
+	digitalWrite(13,HIGH);
+  #if !defined (SDFAT)
+	sFile = SD.open(fileName,FILE_WRITE);
+	if(!sFile){
+		#if defined (debug)
+			Serial.println("fail");
+		#endif
+		return;
+	}
+  #else
+    sFile.open(fileName,O_WRITE );
+    if(!sFile.isOpen()){
+		#if defined (debug)
+			Serial.println("fail");
+		#endif
+		return;
+	}
+
+  #endif
+  	seek(44);
+	//Serial.println(sFile.size());
+	buffCount = 0; buffEmpty[0] = 1; buffEmpty[1] = 1;
+	recording = 1; loadSD = 1;
+/*
+
+	#if defined(analogPinToChannel)
+	#if defined(__AVR_ATmega32U4__)
+		if (pin >= 18) pin -= 18; // allow for channel or pin numbers
+	#endif
+		pin = analogPinToChannel(pin);
+	#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+		if (pin >= 54) pin -= 54; // allow for channel or pin numbers
+	#elif defined(__AVR_ATmega32U4__)
+		if (pin >= 18) pin -= 18; // allow for channel or pin numbers
+	#elif defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
+		if (pin >= 24) pin -= 24; // allow for channel or pin numbers
+	#else
+		if (pin >= 14) pin -= 14; // allow for channel or pin numbers
+	#endif
+
+	#if defined(ADCSRB) && defined(MUX5)
+		// the MUX5 bit of ADCSRB selects whether we're reading from channels
+		// 0 to 7 (MUX5 low) or 8 to 15 (MUX5 high).
+		ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
+	#endif
+*/
+	//if(SAMPLE_RATE < 18000){ ADCSRA |=  _BV(ADPS2) | _BV(ADPS0); ADCSRA &= ~(  _BV(ADPS1)); }
+	//else { 					 ADCSRA |=  _BV(ADPS2);ADCSRA &= ~( _BV(ADPS0) | _BV(ADPS1)); }
+
+   	//unsigned int icr = 10 * (1600000/SAMPLE_RATE);
+    ICR1 = 10 * (1600000/SAMPLE_RATE);//icr;
+	TCCR1A = _BV(WGM11); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+	TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
+	TIMSK1 |=  _BV(ICIE1)| _BV(TOIE1);
+
+	ADMUX |= _BV(REFS0) | _BV(ADLAR) | _BV(MUX2) | _BV(MUX0); //(pin & 0x07); //Analog 5v reference, use pin A5, left-shift result
+	ADCSRB |= _BV(ADTS1) | _BV(ADTS2);  //_BV(ADTS0) |//Attach ADC start to TIMER1 Input Capture flag
+	DIDR0 |= _BV(ADC5D); //Disable digital reads for pin A5
+	 //Prescaler
+//	delay(1000);
+	ADCSRA &= ~(  _BV(ADPS2) );
+    ADCSRA |= _BV(ADEN) | _BV(ADATE) | _BV(ADPS1) | _BV(ADPS0);  //| _BV(ADIE)
+
+
+
+}
+
+void TMRpcm::stopRecording(char *fileName){
+	digitalWrite(13,LOW);
+	TIMSK1 &= ~(_BV(ICIE1) | _BV(TOIE1));
+	ADCSRA = 0;
+    ADCSRB = 0;
+
+
+	if(recording){
+		recording = 0;
+		//unsigned long position = fPosition();
+		sFile.close();
+	}
+
+
+
+
+
+}
+
+
+#endif

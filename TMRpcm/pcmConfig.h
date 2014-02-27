@@ -18,7 +18,7 @@ Blog: https://tmrh20.blogspot.com/
 #define pcmConfig_h   //   #define this so the compiler knows it has been included
 
 #include <Arduino.h>
-#include <TMRpcm.h>
+
 
 
 /****************** GENERAL USER DEFINES *********************************
@@ -28,7 +28,7 @@ Blog: https://tmrh20.blogspot.com/
    Defaults to 64bytes for Uno etc. 254 for Mega etc. note: In multi mode there are 4 buffers*/
 //#define buffSize 128  //must be an even number
 
-  /* Uncomment to run the SD card at full speed (half speed is default for standard SD lib)**/
+  /* Uncomment to run the SD card at full speed (half speed is default for standard SD lib)*/
 #define SD_FULLSPEED
 
   /* HANDLE_TAGS - This options allows proper playback of WAV files with embedded metadata*/
@@ -64,8 +64,13 @@ Blog: https://tmrh20.blogspot.com/
 //#define MODE2  //Using separate 16-bit timers with up to 4 pins (Arduino Mega etc only)
 
    /* The library uses two different ramping methods to prevent popping sounds
-      when PWM is enabled or disabled. This option is autodetected unless defined here
+      when PWM is enabled or disabled. This option is autodetected unless defined here*/
 //#define rampMega
+
+   /* Initial implementation for recording of WAV files to SD card via a microphone or input connected to analog pin 5
+   Seems to require a class 4 card minimum, buffSize may need to be increased to 254 is audio is skipping etc.
+   																									*/
+//#define ENABLE_RECORDING
 
 //*********************** Radio (NRF24L01+) Streaming *********************
 

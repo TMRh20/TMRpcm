@@ -1,4 +1,11 @@
-/*Library by TMRh20 2012-2013*/
+/*Library by TMRh20 2012-2014
+
+Contributors:
+
+  ftp27 (GitHub) - setVolume(); function and code
+  muessigb (GitHub) - metatata (ID3) support
+
+*/
 
 #ifndef TMRpcm_h   // if x.h hasn't been included yet...
 #define TMRpcm_h   //   #define this so the compiler knows it has been included
@@ -46,6 +53,11 @@ class TMRpcm
 	#endif
 	void createWavTemplate(char* filename,unsigned int sampleRate);
 	void finalizeWavTemplate(char* filename);
+	#if defined (ENABLE_RECORDING)
+		void startRecording(char* fileName, byte pin);
+		void startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin);
+		void stopRecording(char *fileName);
+	#endif
 
  private:
 	byte lastSpeakPin;
@@ -67,6 +79,8 @@ class TMRpcm
 	#else
 		unsigned long searchMainTags(SdFile xFile, char *datStr);
 	#endif
+
+
 };
 
 #endif
