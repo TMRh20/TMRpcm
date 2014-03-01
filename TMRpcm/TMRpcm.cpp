@@ -1337,7 +1337,7 @@ byte TMRpcm::metaInfo(boolean infoType, char* filename, char* tagData, byte whic
 	}
 
 //** This section finds the starting point and length of the tag info
-	if(found == 0){ xFile.close(); return 0; }
+	if(found == 0){ xFile.close(); if(ifOpen()){ interrupts();} return 0; }
 
 	unsigned long listEnd;
 	unsigned int listLen;
