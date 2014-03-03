@@ -461,14 +461,13 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
     else{ resolution = 16 * (1000000/SAMPLE_RATE);
 	}
 #else
-
+	resolution = 255;
 	if(SAMPLE_RATE > 7000 && SAMPLE_RATE< 9000){
 		*TCCRnB[tt] &= ~_BV(CS20);
 		*TCCRnB[tt] |= _BV(CS21);
 	}else{
 		*TCCRnB[tt] &= ~_BV(CS21);
 		*TCCRnB[tt] |= _BV(CS20);
-		resolution = 255;
 	}
 #endif
     byte tmp = (sFile.read() + sFile.peek()) / 2;
@@ -699,16 +698,16 @@ boolean TMRpcm::isPlaying(){
 
 
 void TMRpcm::play(char* filename, boolean which){
-	play(filename,which,44);
+	play(filename,44,which);
 }
 
 void TMRpcm::play(char* filename){
-	play(filename,0,44);
+	play(filename,44,0);
 }
 
 byte hold = 0;
 
-void TMRpcm::play(char* filename, boolean which, unsigned long seekPoint){
+void TMRpcm::play(char* filename, unsigned long seekPoint, boolean which){
 
   if(speakerPin != lastSpeakPin){
 	  #if defined (MODE2)
@@ -1144,7 +1143,7 @@ void TMRpcm::stopPlayback(boolean which){
 void TMRpcm::disable(){
 	playing = 0; playing2 = 0;
 	*TIMSK[tt] &= ~( togByte | _BV(TOIE1) );
-	if(ifOpen()){sFile.close();
+	if(ifOpen()){sFile.close(); }
 		#if !defined (SDFAT)
 			if(tFile){tFile.close();}
 		#else
