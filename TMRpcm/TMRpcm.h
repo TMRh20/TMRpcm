@@ -28,6 +28,7 @@ class TMRpcm
 	void disable();
 	void pause();
 	void quality(boolean q);
+	void loop(boolean set);
 	byte speakerPin;
 	boolean wavInfo(char* filename);
 	boolean isPlaying();
@@ -48,6 +49,7 @@ class TMRpcm
 		void volume(char upDown,boolean which);
 		void setVolume(char vol, boolean which);
 		//void ramp(boolean wBuff);
+		void loop(boolean set, boolean which);
 	#else
 		void play(char* filename, unsigned long seekPoint);
 	#endif
