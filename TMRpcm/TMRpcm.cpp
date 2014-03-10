@@ -370,14 +370,14 @@ void TMRpcm::stopPlayback(){
 
 void TMRpcm::pause(){
 	//paused = !paused;
-	if(!bitRead(optionByte,7) && playing){
+	if(bitRead(optionByte,7) && playing){
 		bitClear(optionByte,7);
 		#if !defined (USE_TIMER2)
 			*TIMSK[tt] |= ( _BV(ICIE1) | _BV(TOIE1) );
 		#else
 			*TIMSK[tt] |= ( _BV(OCIE2B) | _BV(TOIE1) );
 		#endif
-	}else if(bitRead(optionByte,7) && playing){
+	}else if(!bitRead(optionByte,7) && playing){
 		bitSet(optionByte,7);
 		*TIMSK[tt] &= ~( _BV(TOIE1) );
 	}
