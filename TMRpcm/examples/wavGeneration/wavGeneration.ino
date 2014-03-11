@@ -31,7 +31,7 @@ char *filename = "myWav.wav"; //The name of the file that will be generated
 void setup(){
 
   audio.speakerPin = 11; //5,6,11 or 46 on Mega, 9 on Uno, Nano, etc
-  pinMode(12,OUTPUT);  
+  pinMode(12,OUTPUT);  //Pin pairs: 9,10 Mega: 5-2,6-7,11-12,46-45
   Serial.begin(115200);
   
 /* Standard SD Lib */

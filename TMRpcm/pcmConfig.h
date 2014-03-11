@@ -67,10 +67,14 @@ Blog: https://tmrh20.blogspot.com/
       when PWM is enabled or disabled. This option is autodetected unless defined here*/
 //#define rampMega
 
-   /* Initial implementation for recording of WAV files to SD card via a microphone or input connected to analog pin 5
-   Seems to require a class 4 card minimum, buffSize may need to be increased to 254 is audio is skipping etc.
+   /* Initial implementation for recording of WAV files to SD card via a microphone or input connected to an analog pin
+   SdFat library is recommended
+   Requires a class 4 card minimum, buffSize may need to be increased to 254 if audio is skipping etc.
+   Depending on the card, can take a few seconds for recording to start
    																									*/
 //#define ENABLE_RECORDING
+	// Amount of space to pre-allocate for recording
+//	#define BLOCK_COUNT 10000UL  // 10000 = 500MB   2000 = 100MB
 
 //*********************** Radio (NRF24L01+) Streaming *********************
 

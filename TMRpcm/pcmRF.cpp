@@ -5,6 +5,7 @@
 
 	#include <Arduino.h>
 	#include <SD.h>
+	#include <SdFat.h>
 	#include <SPI.h>
 	#include <nRF24L01.h>
 	#include <RF24.h>
@@ -18,7 +19,11 @@
 	const uint64_t pipe[3] = { 0x544d526832LL, 0x544d52687CLL };
 
 	RF24 radi(0,0);
-	File txFile;
+	#if !defined(SDFAT)
+		File txFile;
+	#else
+		SdFile txFile;
+	#endif
 	TMRpcm rfWav;
 
 
@@ -50,20 +55,25 @@ boolean pcmRF::isPlaying(){
 
 
 void stopRfPlay(){
-
-  if(txFile){txFile.close();}
-  rfPlaying = 0;
-  detachInterrupt(5); Serial.println("end");
-    //radi.stopListening();
-
+	#if !defined(SDFAT)
+		if(txFile){txFile.close();}
+	#else
+		if(txFile.isOpen()){txFile.close();}
+	#endif
+	rfPlaying = 0;
+	detachInterrupt(5); Serial.println("end");
+	//radi.stopListening();
 }
 
 void pcmRF::stop(){
-
-  if(txFile){txFile.close();}
-  rfPlaying = 0;
-  detachInterrupt(5); Serial.println("end");
-    //radi.stopListening();
+	#if !defined(SDFAT)
+		if(txFile){txFile.close();}
+	#else
+		if(txFile.isOpen()){txFile.close();}
+	#endif
+	rfPlaying = 0;
+	detachInterrupt(5); Serial.println("end");
+	//radi.stopListening();
 }
 
 
@@ -145,11 +155,17 @@ void pcmRF::play(char* filename, int device){
   Serial.print("RF ");Serial.println(device);
 
   if(!rfWav.wavInfo(filename)){ stopRfPlay(); return;}
-  if(!txFile){ txFile = SD.open(filename);}
 
-  if(txFile){
+	#if !defined(SDFAT)
+		if(!txFile){ txFile = SD.open(filename);}
+		if(txFile){
+		txFile.seek(44); //skip the header info
+	#else
+		if(!txFile.isOpen()){ txFile.open(filename);}
+		if(txFile.isOpen()){
+		txFile.seekSet(44); //skip the header info
+	#endif
 
-    txFile.seek(44); //skip the header info
 
     byte intData[5] = {1,2,3,4};
     radi.writeAckPayload(1,&intData,sizeof(intData));

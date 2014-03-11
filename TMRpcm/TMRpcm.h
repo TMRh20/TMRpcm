@@ -21,6 +21,7 @@ class TMRpcm
 {
  public:
  	//TMRpcm();
+ 	//*** General Playback Functions and Vars ***
 	void play(char* filename);
 	void stopPlayback();
 	void volume(char vol);
@@ -30,17 +31,25 @@ class TMRpcm
 	void quality(boolean q);
 	void loop(boolean set);
 	byte speakerPin;
-	boolean wavInfo(char* filename);
 	boolean isPlaying();
+
+
+	//*** Public vars used by RF library also ***
+	boolean wavInfo(char* filename);
 	boolean rfPlaying;
 	unsigned int SAMPLE_RATE;
+
+	//*** Advanced usage Vars ***
 	byte listInfo(char* filename, char *tagData, byte infoNum);
 	byte id3Info(char* filename, char *tagData, byte infoNum);
 	byte getInfo(char* filename, char* tagData, byte infoNum);
-	#if defined (MODE2)
-		byte speakerPin2;
-	#endif
-	#if defined (ENABLE_MULTI)
+
+
+	#if !defined (ENABLE_MULTI)//Normal Mode
+		void play(char* filename, unsigned long seekPoint);
+
+	//*** MULTI MODE **
+	#else
 		void quality(boolean q, boolean q2);
 		void play(char* filename, boolean which);
 		void play(char* filename, unsigned long seekPoint, boolean which);
@@ -48,11 +57,13 @@ class TMRpcm
 		void stopPlayback(boolean which);
 		void volume(char upDown,boolean which);
 		void setVolume(char vol, boolean which);
-		//void ramp(boolean wBuff);
 		void loop(boolean set, boolean which);
-	#else
-		void play(char* filename, unsigned long seekPoint);
 	#endif
+	#if defined (MODE2)
+			byte speakerPin2;
+	#endif
+
+	//*** Recording WAV files ***
 	void createWavTemplate(char* filename,unsigned int sampleRate);
 	void finalizeWavTemplate(char* filename);
 	#if defined (ENABLE_RECORDING)
@@ -62,27 +73,29 @@ class TMRpcm
 	#endif
 
  private:
-	byte lastSpeakPin;
-	//unsigned int resolution;
-	void setPin();
+
+ 	void setPin();
 	void timerSt();
-	#if defined (ENABLE_MULTI)
-		void ramp(boolean wBuff);
-	#endif
-	#if defined (MODE2)
-		void setPins();
-	#endif
+	unsigned long fPosition();
+	unsigned int resolution;
+	byte lastSpeakPin;
 	byte metaInfo(boolean infoType, char* filename, char* tagData, byte whichInfo);
 	boolean seek(unsigned long pos);
 	boolean ifOpen();
-	unsigned long fPosition();
+
 	#if !defined (SDFAT)
 		boolean searchMainTags(File xFile, char *datStr);
 	#else
 		unsigned long searchMainTags(SdFile xFile, char *datStr);
 	#endif
 
+	#if defined (ENABLE_MULTI)
+		void ramp(boolean wBuff);
+	#endif
 
+	#if defined (MODE2)
+		void setPins();
+	#endif
 };
 
 #endif
