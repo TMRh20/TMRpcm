@@ -311,8 +311,8 @@ boolean TMRpcm::wavInfo(char* filename){
 	    bps = sFile.read();
 	    bps = sFile.read() << 8 | bps;
 	    if(bps == 16 || stereo == 2){ //_2bytes=1;
-	    	bitSet(optionByte,4)
-	    }else{bitClear(optionByte,4)}
+	    	bitSet(optionByte,4);
+	    }else{ bitClear(optionByte,4); }
 	#endif
 
 	#if defined (HANDLE_TAGS)
@@ -1598,7 +1598,7 @@ void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
 
 	if (!card1.init(SPI_FULL_SPEED,53)) {
 	    return;
-  	}else{Serial.println("SD OK");}
+  	}else{}//Serial.println("SD OK");}
 
 	if(!vol.init(&card1)){}//Serial.println("card failed"); }
 	if (!rut.openRoot(&vol)) {}//Serial.println("openRoot failed"); }
