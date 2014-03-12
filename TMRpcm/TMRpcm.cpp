@@ -214,7 +214,6 @@ void TMRpcm::timerSt(){
 
 void TMRpcm::timerSt(){
 	*TCCRnA[tt] = _BV(WGM21) | _BV(WGM20) | _BV(COM2B1); //Fast PWM with 0xFF (255) top
-	*TCCRnB[tt] = _BV(CS21);
 }
 #endif
 
@@ -482,7 +481,7 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
 	}
 #else
 	resolution = 255;
-	if(SAMPLE_RATE > 7000 && SAMPLE_RATE< 9000){
+	if(SAMPLE_RATE < 9000){
 		*TCCRnB[tt] &= ~_BV(CS20);
 		*TCCRnB[tt] |= _BV(CS21);
 	}else{
@@ -608,8 +607,8 @@ ISR(TIMER2_COMPB_vect){
 		//TIMER2 runs at 16mhz/255 (62,745Hz), so the timing for sample rate must be manually counted
 		switch (SR){
 			case 0: break;
-			case 1: if(loadCounter){loadCounter = 0;return;}  break;
-			case 3: if(loadCounter){ if(loadCounter >= 3){loadCounter=0; return;} loadCounter++; return;} break;
+			case 3: if(loadCounter){loadCounter = 0;return;}  break;
+			case 1: if(loadCounter){ if(loadCounter >= 3){loadCounter=0; return;} loadCounter++; return;} break;
 			case 2: if(loadCounter){ if(loadCounter >= 2){loadCounter=0; return; }loadCounter++;  return;} break;
 		}
 		loadCounter++;
