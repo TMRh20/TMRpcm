@@ -67,8 +67,8 @@ class TMRpcm
 	void createWavTemplate(char* filename,unsigned int sampleRate);
 	void finalizeWavTemplate(char* filename);
 	#if defined (ENABLE_RECORDING)
-		void startRecording(char* fileName, byte pin);
-		void startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin);
+		void startRecording(char* fileName, unsigned int SAMPLE_RATE, byte pin);
+		void startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough);
 		void stopRecording(char *fileName);
 	#endif
 

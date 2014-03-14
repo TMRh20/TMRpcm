@@ -162,7 +162,7 @@
 
 //*********** Standard Global Variables ***************
 volatile unsigned int dataEnd;
-volatile boolean buffEmpty[2] = {false,false}, whichBuff = false, playing = 0, a, b;
+volatile boolean buffEmpty[2] = {true,true}, whichBuff = false, playing = 0, a, b;
 
 //*** Options/Indicators from MSb to LSb: paused, qual, rampUp, _2bytes, loop, loop2nd track ***
 byte optionByte = B00100000;
@@ -189,7 +189,7 @@ byte tt;
 
 #if defined (ENABLE_RECORDING)
 	Sd2Card card1;
-	boolean recording = 0;
+	byte recording = 0;
 #endif
 //**************************************************************
 //********** Core Playback Functions used in all modes *********
@@ -628,7 +628,13 @@ ISR(TIMER2_COMPB_vect){
 
 #if defined (ENABLE_RECORDING)
   ISR(TIMER1_COMPB_vect){
-		buffer[whichBuff][buffCount] = ADCH;
+
+    buffer[whichBuff][buffCount] = ADCH;
+	if(recording > 1){
+		if(volMod < 0 ){  *OCRnA[tt] = ADCH >> (volMod*-1);
+	  	}else{  		  *OCRnA[tt] = ADCH << volMod;
+	  	}
+	}
  		buffCount++;
  		if(buffCount >= buffSize){
     		buffCount = 0;
@@ -1510,7 +1516,7 @@ byte TMRpcm::metaInfo(boolean infoType, char* filename, char* tagData, byte whic
  	}
  	xFile.close();
  	if(ifOpen()){ interrupts();}
- 	return len;
+ 	return 0;
 }
 
 
@@ -1660,32 +1666,40 @@ void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
 #if defined (ENABLE_RECORDING)
 
 void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin){
+	startRecording(fileName,SAMPLE_RATE,pin,0);
+}
 
-	//*** Creates a blank WAV template file. Data can be written starting at the 45th byte ***
-	createWavTemplate(fileName, SAMPLE_RATE);
+void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough){
 
-	//*** Open the file and seek to the 44th byte ***
-  #if !defined (SDFAT)
-	sFile = SD.open(fileName,FILE_WRITE);
-	if(!sFile){
-		#if defined (debug)
-			Serial.println("fail");
-		#endif
-		return;
-	}
-  #else
-    sFile.open(fileName,O_WRITE );
-    if(!sFile.isOpen()){
-		#if defined (debug)
-			Serial.println("fail");
-		#endif
-		return;
-	}
+	recording = passThrough + 1;
+	setPin();
+	if(recording < 3){
+		//*** Creates a blank WAV template file. Data can be written starting at the 45th byte ***
+		createWavTemplate(fileName, SAMPLE_RATE);
 
-  #endif
-  	seek(44);
+		//*** Open the file and seek to the 44th byte ***
+	  #if !defined (SDFAT)
+		sFile = SD.open(fileName,FILE_WRITE);
+		if(!sFile){
+			#if defined (debug)
+				Serial.println("fail");
+			#endif
+			return;
+		}
+  	  #else
+    	sFile.open(fileName,O_WRITE );
+    	if(!sFile.isOpen()){
+			#if defined (debug)
+				Serial.println("fail");
+			#endif
+			return;
+		}
 
-	buffCount = 0; buffEmpty[0] = 1; buffEmpty[1] = 1;recording = 1;
+  	  #endif
+	seek(44);
+ 	}
+	buffCount = 0; buffEmpty[0] = 1; buffEmpty[1] = 1;
+
 
 	/*** This section taken from wiring_analog.c to translate between pins and channel numbers ***/
 	#if defined(analogPinToChannel)
@@ -1714,11 +1728,21 @@ void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin){
 	#endif
 
 	//Set up the timer
+	if(recording > 1){
 
-    ICR1 = 10 * (1600000/SAMPLE_RATE);//Timer will count up to this value from 0;
-	TCCR1A = _BV(WGM11); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
-	TCCR1B = _BV(WGM13) | _BV(WGM12) | _BV(CS10); //CS10 = no prescaling
-	*TIMSK[tt] |=  _BV(OCIE1B)| _BV(OCIE1A); //Enable the TIMER1 COMPA and COMPB interrupts
+		*TCCRnA[tt] = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //Enable the timer port/pins as output for passthrough
+
+	}
+    *ICRn[tt] = 10 * (1600000/SAMPLE_RATE);//Timer will count up to this value from 0;
+	*TCCRnA[tt] |= _BV(WGM11); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
+	*TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10); //CS10 = no prescaling
+
+	if(recording < 3){ //Normal Recording
+		*TIMSK[tt] |=  _BV(OCIE1B)| _BV(OCIE1A); //Enable the TIMER1 COMPA and COMPB interrupts
+	}else{
+		*TIMSK[tt] |=  _BV(OCIE1B); //Direct pass through to speaker, COMPB only
+	}
+
 
 	ADMUX |= _BV(REFS0) | _BV(ADLAR);// Analog 5v reference, left-shift result so only high byte needs to be read
 	ADCSRB |= _BV(ADTS0) | _BV(ADTS2);  //Attach ADC start to TIMER1 Compare Match B flag
@@ -1734,23 +1758,20 @@ void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin){
 }
 
 void TMRpcm::stopRecording(char *fileName){
-	digitalWrite(13,LOW);
+
 	*TIMSK[tt] &= ~(_BV(OCIE1B) | _BV(OCIE1A));
 	ADCSRA = 0;
     ADCSRB = 0;
 
-
-	if(recording){
+	if(recording == 1 || recording == 2){
 		recording = 0;
 		unsigned long position = fPosition();
 		#if defined (SDFAT)
 			sFile.truncate(position);
 		#endif
 		sFile.close();
+		finalizeWavTemplate(fileName);
 	}
-
-	finalizeWavTemplate(fileName);
-
 }
 
 

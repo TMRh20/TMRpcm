@@ -52,15 +52,16 @@ void loop() {
     if(Serial.available()){                          //Send commands over serial to play
       switch(Serial.read()){
         case 'r': audio.startRecording("test.wav",16000,A0); break;    //Record at 16khz sample rate on pin A0
+        case 'R': audio.startRecording("test.wav",16000,A0,1); break;  //Record, but with passthrough to speaker.
+        case 't': audio.startRecording("test.wav",16000,A0,2); break;  //Do not record. Output direct to speaker
+        							       //Note: If samples are dropped before writing, it
+        							       //      will not be heard in passthrough mode
         case 's': audio.stopRecording("test.wav"); break;              //Stop recording
-        case 'p': audio.play("test.wav"); break;                       //Play test.wav on pins 11,12
-        case '=': audio.volume(1); break;                              //Increase volume by 1
-        case '-': audio.volume(0); break;                              //Decrease volume by 1
+        case 'p': audio.play("test.wav"); break;                       //Play the recording 
+        case '=': audio.volume(1); break;                              //Increase volume by 1. Does not affect recording
+        case '-': audio.volume(0); break;                              //Decrease volume by 1. Does not affect recording
         case 'S': audio.stopPlayback(); break;                         //Stop all playback
         
       }
     }
 }
-
-
-
