@@ -8,24 +8,20 @@
 
 #if defined (ENABLE_RF)
 
+
+	class RF24;
+
 	class pcmRF
 	{
 	 public:
-		pcmRF(int CE, int CS, int spkPin);
-		void play(char* filename, int device);
+	 	pcmRF( RF24& _radio);
+		void play(char* filename, byte device);
 		boolean isPlaying();
 		void stop();
-
+		void begin();
 	 private:
-	 	//void stopRfPlay();
 
 	};
 
-	void checkRF();
-	void buffRX();
-	void loadSingleBuffer(boolean wBf);
-
-
 #endif
-
 #endif

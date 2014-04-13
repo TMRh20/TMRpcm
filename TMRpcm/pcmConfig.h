@@ -83,6 +83,10 @@ to Comment if not using radio                                                  *
 
 //#define ENABLE_RF
 
+  /* Uncomment this line to disable all standard features except RF playback.
+     This will minimize resource usage if not playing or recording files locally */
+//#define RF_ONLY
+
 //*************************************************************************
 
 #endif

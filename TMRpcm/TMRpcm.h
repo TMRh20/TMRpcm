@@ -16,6 +16,9 @@ Contributors:
 #include <SD.h>
 #include <SdFat.h>
 
+#if defined (ENABLE_RF)
+	class RF24;
+#endif
 
 class TMRpcm
 {

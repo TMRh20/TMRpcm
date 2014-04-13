@@ -6,7 +6,7 @@
 #include <TMRpcm.h>
 #include <pcmConfig.h>
 
-
+#if !defined (RF_ONLY)
 
 //********************* Timer arrays and pointers **********************
 //********** Enables use of different timers on different boards********
@@ -470,7 +470,8 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
 
 	if(SAMPLE_RATE > 45050 ){ SAMPLE_RATE = 24000;
 	#if defined (debug)
-  	  	Serial.println("SAMPLE RATE TOO HIGH");
+  	  	Serial.print("SAMPLE RATE TOO HIGH: ");
+  	  	Serial.println(SAMPLE_RATE);
   	#endif
   	}
 
@@ -1730,7 +1731,7 @@ void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, 
 	//Set up the timer
 	if(recording > 1){
 
-		*TCCRnA[tt] = _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //Enable the timer port/pins as output for passthrough
+		*TCCRnA[tt] = _BV(COM1A1); //Enable the timer port/pin as output for passthrough
 
 	}
     *ICRn[tt] = 10 * (1600000/SAMPLE_RATE);//Timer will count up to this value from 0;
@@ -1776,3 +1777,6 @@ void TMRpcm::stopRecording(char *fileName){
 
 
 #endif
+
+#endif // Not defined RF_ONLY
+
