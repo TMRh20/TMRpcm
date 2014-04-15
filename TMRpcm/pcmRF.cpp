@@ -66,6 +66,16 @@ void stop(){
 
 }
 
+void pcmRF::broadcast(byte device){
+	noInterrupts();
+	if(device == 255){
+		radi.openWritingPipe(addresses[1]);
+	}else{
+		radi.openWritingPipe(addresses[device+2]);
+	}
+	interrupts();
+}
+
 void pcmRF::play(char* filename, byte device){
   stop();
   rfPlaying = 1;

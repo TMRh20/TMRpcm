@@ -28,7 +28,7 @@
 #include <TMRpcm.h>            //  also need to include this library...
 #include <SPI.h>
 #include <RF24.h>
-#include <printf.h>
+#include "printf.h"
 
 RF24 radio(48,49);                   // I use 48,49 on Mega 2560, 7,8 on Uno, Nano, etc
 pcmRF rfAudio(radio);
@@ -49,9 +49,9 @@ void setup(){
     Serial.println("SD ok");   
   }
   
-  //printf_begin();                  // Comment this out to save space
+  printf_begin();                  // Comment this out to save space
   rfAudio.begin();
-  //radio.printDetails();            // Comment this out to save space
+  radio.printDetails();            // Comment this out to save space
 }
 
 
@@ -61,16 +61,18 @@ void loop(){
   if(Serial.available()){    
     switch(Serial.read()){
     case 'a': audio.stopPlayback(); rfAudio.play("catfish",1);        break;   // Play to radio # 1 in the radio group
-    case 'b': audio.stopPlayback(); rfAudio.play("calibrat.wav",0);   break;   // Play to radio # 0 in the radio group
+    case 'b': audio.stopPlayback(); rfAudio.play("calibrat.wav",2);   break;   // Play to radio # 0 in the radio group
     case 'c': audio.stopPlayback(); rfAudio.play("calibrat.wav",255); break;   // Play to all radios in the radio group
+    case '1': rfAudio.broadcast(1);                                   break;   // Broadcast the current audio to a different radio/group
+    case '2': rfAudio.broadcast(2);                                   break;   // Broadcast the current audio to a different radio/group  
+    case '3': rfAudio.broadcast(255);                                 break;   // Broadcast the current audio to a different radio/group
     case 'd': rfAudio.stop(); audio.play("catfish");                  break;   // Play a file locally
     case 'e': rfAudio.stop(); audio.play("calibrat.wav");             break;   // Play a file locally
     case 's': rfAudio.stop();                                         break;   // Stop radio playback
-    case 'S': audio.stopPlayback();                                  break;   // Stop local playback
-    case '=': audio.volume(1);                                       break;   // Volume up
-    case '-': audio.volume(0);                                       break;   // Volume down
+    case 'S': audio.stopPlayback();                                   break;   // Stop local playback
+    case '=': audio.volume(1);                                        break;   // Volume up
+    case '-': audio.volume(0);                                        break;   // Volume down
     default: break;
     }
   }
-
 }
