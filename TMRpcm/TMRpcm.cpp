@@ -165,7 +165,7 @@ volatile unsigned int dataEnd;
 volatile boolean buffEmpty[2] = {true,true}, whichBuff = false, playing = 0, a, b;
 
 //*** Options/Indicators from MSb to LSb: paused, qual, rampUp, _2bytes, loop, loop2nd track ***
-byte optionByte = B00100000;
+byte optionByte = B01100000;
 
 volatile byte buffer[2][buffSize], buffCount = 0;
 char volMod=0;
@@ -817,6 +817,7 @@ void TMRpcm::play(char* filename, unsigned long seekPoint, boolean which){
 		if(ifOpen()){
 			if(seekPoint > 0){ seek(seekPoint); }else{ seek(44); }
 			ramp(0);
+			playing = 1;
 		}else{
 			#if defined (debug)
 				Serial.println("Read fail");
@@ -835,6 +836,7 @@ void TMRpcm::play(char* filename, unsigned long seekPoint, boolean which){
 				if(seekPoint > 0){ tFile.seekSet(seekPoint); }else{ tFile.seekSet(44); }
 		#endif
 		    	ramp(1);
+		    	playing2 = 2;
 			}else{
 				#if defined (debug)
 					Serial.println("Read fail");
@@ -896,9 +898,6 @@ void TMRpcm::play(char* filename, unsigned long seekPoint, boolean which){
   		 }
   		 *TIMSK[tt] |= togByte;
 		//interrupts();
-  }else{
-		if(!which){ playing = 1;}
-		else{       playing2 = 1;}
   }
 }
 
