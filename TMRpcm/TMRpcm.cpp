@@ -1,10 +1,13 @@
 /*Library by TMRh20 2012-2014*/
 
 
-#include <SD.h>
-#include <SdFat.h>
-#include <TMRpcm.h>
 #include <pcmConfig.h>
+#if !defined (SDFAT)
+	#include <SD.h>
+#else
+	#include <SdFat.h>
+#endif
+#include <TMRpcm.h>
 
 #if !defined (RF_ONLY)
 
