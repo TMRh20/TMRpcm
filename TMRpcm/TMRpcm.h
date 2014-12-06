@@ -13,8 +13,11 @@ Contributors:
 #include <Arduino.h>
 #include <pcmConfig.h>
 #include <pcmRF.h>
-#include <SD.h>
-#include <SdFat.h>
+#if !defined (SDFAT)
+	#include <SD.h>
+#else
+	#include <SdFat.h>
+#endif
 
 #if defined (ENABLE_RF)
 	class RF24;
