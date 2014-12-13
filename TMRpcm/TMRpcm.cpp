@@ -1604,7 +1604,7 @@ void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
 	char* fNam = filename;
 	uint32_t bgnBlock, endBlock;
 
-	if (!card1.init(SPI_FULL_SPEED,53)) {
+	if (!card1.init(SPI_FULL_SPEED,CSPin)) {
 	    return;
   	}else{}//Serial.println("SD OK");}
 

@@ -38,7 +38,7 @@ class TMRpcm
 	void loop(boolean set);
 	byte speakerPin;
 	boolean isPlaying();
-
+    uint8_t CSPin;
 
 	//*** Public vars used by RF library also ***
 	boolean wavInfo(char* filename);

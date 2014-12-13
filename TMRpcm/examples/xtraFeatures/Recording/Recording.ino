@@ -43,7 +43,8 @@ void setup() {
   }else{
     Serial.println("SD OK"); 
   }
-  
+  // The audio library needs to know which CS pin to use for recording
+  audio.CSPin = SD_ChipSelectPin;
 }
 
 
