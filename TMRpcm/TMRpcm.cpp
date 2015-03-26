@@ -167,7 +167,7 @@
 volatile unsigned int dataEnd;
 volatile boolean buffEmpty[2] = {true,true}, whichBuff = false, playing = 0, a, b;
 
-//*** Options/Indicators from MSb to LSb: paused, qual, rampUp, _2bytes, loop, loop2nd track ***
+//*** Options/Indicators from MSb to LSb: paused, qual, rampUp, 2-byte samples, loop, loop2nd track, 16-bit ***
 byte optionByte = B01100000;
 
 volatile byte buffer[2][buffSize], buffCount = 0;
@@ -312,9 +312,13 @@ boolean TMRpcm::wavInfo(char* filename){
 		seek(34);
 	    bps = sFile.read();
 	    bps = sFile.read() << 8 | bps;
-	    if(bps == 16 || stereo == 2){ //_2bytes=1;
+	    if( stereo == 2){ //_2bytes=1;
 	    	bitSet(optionByte,4);
-	    }else{ bitClear(optionByte,4); }
+		}else
+		if( bps == 16 ){
+			bitSet(optionByte,1);
+			bitSet(optionByte,4);
+	    }else{ bitClear(optionByte,4); bitClear(optionByte,1);}
 	#endif
 
 	#if defined (HANDLE_TAGS)
@@ -578,8 +582,8 @@ ISR(TIMER2_COMPB_vect){
  //Then enable global interupts before this interrupt is finished, so the music can interrupt the buffering
   //sei();
 
-
 	if(buffEmpty[!whichBuff]){
+
 		a = !whichBuff;
 		*TIMSK[tt] &= ~togByte;
 		sei();
@@ -664,6 +668,10 @@ ISR(TIMER1_OVF_vect){
 
 	#if defined (STEREO_OR_16BIT)
 	}else{
+		if(bitRead(optionByte,1)){
+			buffer[whichBuff][buffCount] += 127;
+			//buffer[whichBuff][buffCount+1] += 127;
+		}
 		#if !defined (MODE2)
 			if(volMod < 0 ){ *OCRnA[tt] = buffer[whichBuff][buffCount] >> (volMod*-1);
   							 *OCRnB[tt] = buffer[whichBuff][buffCount+1] >> (volMod*-1);
