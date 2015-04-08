@@ -15,14 +15,14 @@ TMRpcm wav;
 #include <SD.h>
 #define SD_ChipSelectPin 4
 
-prog_char wav_1[] PROGMEM = "beeps/beep-8";
-prog_char wav_2[] PROGMEM = "warning.wav";
-prog_char wav_3[] PROGMEM = "verified.wav";
-prog_char wav_4[] PROGMEM = "engage.wav";
-prog_char wav_5[] PROGMEM = "link.wav";
-//etc...
+static const char wav_1[] PROGMEM = "beeps/beep-8";
+static const char wav_2[] PROGMEM = "warning.wav";
+static const char wav_3[] PROGMEM = "verified.wav";
+static const char wav_4[] PROGMEM = "engage.wav";
+static const char wav_5[] PROGMEM = "link.wav";
 
-PROGMEM const char *wav_table[] PROGMEM = 
+
+const char *wav_table[] = 
 {
   wav_1,
   wav_2,
@@ -52,19 +52,18 @@ void loop(){
       char wavFile[33];
       
       switch(Serial.read()){      
-        case 'P': strcpy_P(wavFile, (char*)pgm_read_word(&(wav_table[0])));
+        case 'P': strcpy_P(wavFile, wav_table[0]);
                 wav.play(wavFile);
                 break;
-        case 'd': strcpy_P(wavFile, (char*)pgm_read_word(&(wav_table[1])));
+        case 'd': strcpy_P(wavFile, wav_table[1]);
                 wav.play(wavFile);
                 break;
-        case 't': strcpy_P(wavFile, (char*)pgm_read_word(&(wav_table[2])));
+        case 't': strcpy_P(wavFile, wav_table[3]);
                 wav.play(wavFile);
-                break; 
+                break;
         //etc.. etc...
       }
   }
 }
-
 
 
