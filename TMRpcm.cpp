@@ -1,6 +1,7 @@
 /*Library by TMRh20 2012-2014*/
 
-
+#define RESOLUTION_BASE ((F_CPU) / 10)
+    
 #include <pcmConfig.h>
 #if !defined (SDFAT)
 	#include <SD.h>
@@ -484,8 +485,8 @@ void TMRpcm::play(char* filename, unsigned long seekPoint){
 
 #if !defined (USE_TIMER2)
     //if(qual)
-    if(bitRead(optionByte,6)){resolution = 10 * (800000/SAMPLE_RATE);}
-    else{ resolution = 10 * (1600000/SAMPLE_RATE);
+    if(bitRead(optionByte,6)){resolution = 10 * ((RESOLUTION_BASE/2)/SAMPLE_RATE);}
+    else{ resolution = 10 * (RESOLUTION_BASE/SAMPLE_RATE);
 	}
 #else
 	resolution = 255;
@@ -808,8 +809,8 @@ void TMRpcm::play(char* filename, unsigned long seekPoint, boolean which){
 			#endif
 		}
 	#if !defined (USE_TIMER2)
-	    if(bitRead(optionByte,6)){resolution = 10 * (800000/SAMPLE_RATE);}
-        else{ resolution = 10 * (1600000/SAMPLE_RATE);}
+	    if(bitRead(optionByte,6)){resolution = 10 * ((RESOLUTION_BASE/2)/SAMPLE_RATE);}
+        else{ resolution = 10 * (RESOLUTION_BASE/SAMPLE_RATE);}
     #else
     	resolution = 255;
     #endif
