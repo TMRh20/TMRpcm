@@ -9,5 +9,8 @@
     "url": "https://github.com/TMRh20/TMRpcm.git"
   },
   "frameworks": "arduino",
-  "platforms": "atmelavr"
+  "platforms": "atmelavr",
+  "export": {
+    "exclude": "audio_samples"
+  }
 }
