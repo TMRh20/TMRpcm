@@ -2,7 +2,6 @@
   "name": "PCM",
   "keywords": "sound, audio, music, sd, card, playback",
   "description": "PCM/WAV playback direct from SD card",
-  "include": "TMRpcm",
   "repository":
   {
     "type": "git",
