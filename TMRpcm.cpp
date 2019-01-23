@@ -1745,7 +1745,7 @@ void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, 
 		*TCCRnA[tt] = _BV(COM1A1); //Enable the timer port/pin as output for passthrough
 
 	}
-    *ICRn[tt] = 10 * (1600000/SAMPLE_RATE);//Timer will count up to this value from 0;
+    *ICRn[tt] = 10 * (RESOLUTION_BASE/SAMPLE_RATE);//Timer will count up to this value from 0;
 	*TCCRnA[tt] |= _BV(WGM11); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
 	*TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10); //CS10 = no prescaling
 
