@@ -39,7 +39,7 @@ Blog: https://tmrh20.blogspot.com/
 //#define DISABLE_SPEAKER2
 
   /* Use 8-bit TIMER2 - If using an UNO, Nano, etc and need TIMER1 for other things*/
-//#define USE_TIMER2
+#define USE_TIMER2
 
 //#define debug
 /****************** ADVANCED USER DEFINES ********************************
@@ -72,9 +72,9 @@ Blog: https://tmrh20.blogspot.com/
    Requires a class 4 card minimum, buffSize may need to be increased to 254 if audio is skipping etc.
    Depending on the card, can take a few seconds for recording to start
    																									*/
-//#define ENABLE_RECORDING
+#define ENABLE_RECORDING
 	// Amount of space to pre-allocate for recording
-//	#define BLOCK_COUNT 10000UL  // 10000 = 500MB   2000 = 100MB
+	#define BLOCK_COUNT 10000UL  // 10000 = 500MB   2000 = 100MB
 
 //*********************** Radio (NRF24L01+) Streaming *********************
 
