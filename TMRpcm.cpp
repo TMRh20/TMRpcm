@@ -1628,8 +1628,9 @@ void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
 	  if (!fil.contiguousRange(&bgnBlock, &endBlock)) {
 	    //Serial.println("contiguousRange failed");
 	  }
-	  if (!card1.erase(bgnBlock, endBlock)) //Serial.println("card.erase failed");
-
+	  if (!card1.erase(bgnBlock, endBlock)){ 
+        //Serial.println("card.erase failed"); 
+      }
 	rut.close();
 	fil.close();
 #endif
