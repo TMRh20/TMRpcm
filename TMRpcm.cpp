@@ -1542,7 +1542,7 @@ void TMRpcm::finalizeWavTemplate(char* filename){
 	unsigned long fSize = 0;
 
   #if !defined (SDFAT)
-		sFile = SD.open(filename,FILE_WRITE);
+		sFile = SD.open(filename,O_READ | O_WRITE);
 
     if(!sFile){
 		#if defined (debug)
