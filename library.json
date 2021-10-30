@@ -1,6 +1,6 @@
 {
   "name": "PCM",
-  "version": "1.1",
+  "version": "1.2",
   "keywords": "sound, audio, music, sd, card, playback",
   "description": "PCM/WAV playback direct from SD card",
   "repository":
