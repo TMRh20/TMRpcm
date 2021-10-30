@@ -22,9 +22,11 @@ Better performance may be seen using the SdFat library. See included example for
 Running the Arduino from a battery or filtered power supply will reduce noise.
 */
 
-#include <SD.h>
+//#include <SdFat.h>
 #include <SPI.h>
 #include <TMRpcm.h>
+//Uncomment this, the include above and in pcmConfig.h if using SdFat library
+//SdFat SD;
 
 #define SD_ChipSelectPin 53  //example uses hardware SS pin 53 on Mega2560
 //#define SD_ChipSelectPin 4  //using digital pin 4 on arduino nano 328, can use other pins
