@@ -449,13 +449,6 @@ Prevents a whole lot more #if defined statements */
 //***************************************************************************************
 //********************** Functions for single track playback ****************************
 
-#if !defined (ENABLE_MULTI) //Below section for normal playback of 1 track at a time
-
-
-void TMRpcm::play(char* filename){
-    play(filename,0);
-}
-
 unsigned int TMRpcm::FSHlength(const __FlashStringHelper * FSHinput) {
   PGM_P FSHinputPointer = reinterpret_cast<PGM_P>(FSHinput);
   unsigned int stringLength = 0;
@@ -465,13 +458,16 @@ unsigned int TMRpcm::FSHlength(const __FlashStringHelper * FSHinput) {
   return stringLength;
 }
 
-void TMRpcm::play(const __FlashStringHelper* FS){
+#if !defined (ENABLE_MULTI) //Below section for normal playback of 1 track at a time
+
+
+void TMRpcm::play(const __FlashStringHelper* FS, unsigned long seekPoint){
     const byte textLength = FSHlength(FS);
     char buffer[textLength + 1];
     memcpy_P(buffer, FS, textLength + 1);
-    play(buffer,0);
+    play(buffer,seekPoint);
 }
-
+    
 void TMRpcm::play(char* filename, unsigned long seekPoint){
 
   if(speakerPin != lastSpeakPin){
@@ -769,8 +765,18 @@ void TMRpcm::play(char* filename, boolean which){
     play(filename,0,which);
 }
 
-void TMRpcm::play(char* filename){
-    play(filename,0,0);
+void TMRpcm::play(const __FlashStringHelper* FS, boolean which){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    play(buffer,0, which);
+}
+
+void TMRpcm::play(const __FlashStringHelper* FS, unsigned long seekPoint, boolean which){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    play(buffer,seekPoint, which);
 }
 
 byte hold = 0;
@@ -1555,7 +1561,12 @@ byte TMRpcm::metaInfo(boolean infoType, char* filename, char* tagData, byte whic
 
 /*********************************************************************************
 ********************** DIY Digital Audio Generation ******************************/
-
+void TMRpcm::finalizeWavTemplate(const __FlashStringHelper* FS){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    finalizeWavTemplate(buffer);
+}
 
 void TMRpcm::finalizeWavTemplate(char* filename){
     disable();
@@ -1617,7 +1628,12 @@ void TMRpcm::finalizeWavTemplate(char* filename){
     #endif
 }
 
-
+void TMRpcm::createWavTemplate(const __FlashStringHelper* FS, unsigned int sampleRate){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    createWavTemplate(buffer,sampleRate);
+}
 
 void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
     disable();
@@ -1672,9 +1688,13 @@ void TMRpcm::createWavTemplate(char* filename, unsigned int sampleRate){
 
 #if defined (ENABLE_RECORDING)
 
-void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin){
-    startRecording(fileName,SAMPLE_RATE,pin,0);
+void TMRpcm::startRecording(const __FlashStringHelper* FS, unsigned int sampleRate, byte pin, byte passThrough){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    startRecording(buffer,sampleRate,pin,passThrough);
 }
+
 
 void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough){
 
@@ -1762,6 +1782,13 @@ void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, 
     ADCSRA |= _BV(ADEN) | _BV(ADATE); //ADC Enable, Auto-trigger enable
 
 
+}
+
+void TMRpcm::stopRecording(const __FlashStringHelper* FS){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    stopRecording(buffer);
 }
 
 void TMRpcm::stopRecording(char *fileName){
