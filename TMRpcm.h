@@ -29,6 +29,7 @@ class TMRpcm
  	//TMRpcm();
  	//*** General Playback Functions and Vars ***
 	void play(char* filename);
+    void play(const __FlashStringHelper* FS);
 	void stopPlayback();
 	void volume(char vol);
 	void setVolume(char vol);
@@ -88,6 +89,7 @@ class TMRpcm
 	byte metaInfo(boolean infoType, char* filename, char* tagData, byte whichInfo);
 	boolean seek(unsigned long pos);
 	boolean ifOpen();
+    unsigned int FSHlength(const __FlashStringHelper * FSHinput);
 
 	#if !defined (SDFAT)
 		boolean searchMainTags(File xFile, char *datStr);

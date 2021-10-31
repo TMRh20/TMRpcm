@@ -456,6 +456,21 @@ void TMRpcm::play(char* filename){
     play(filename,0);
 }
 
+unsigned int TMRpcm::FSHlength(const __FlashStringHelper * FSHinput) {
+  PGM_P FSHinputPointer = reinterpret_cast<PGM_P>(FSHinput);
+  unsigned int stringLength = 0;
+  while (pgm_read_byte(FSHinputPointer++)) {
+    stringLength++;
+  }
+  return stringLength;
+}
+
+void TMRpcm::play(const __FlashStringHelper* FS){
+    const byte textLength = FSHlength(FS);
+    char buffer[textLength + 1];
+    memcpy_P(buffer, FS, textLength + 1);
+    play(buffer,0);
+}
 
 void TMRpcm::play(char* filename, unsigned long seekPoint){
 
