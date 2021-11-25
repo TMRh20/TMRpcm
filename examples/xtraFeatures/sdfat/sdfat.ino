@@ -3,7 +3,7 @@ This example demonstrates how to use the SDFAT library for audio playback.
 Read time and program space are reduced by using SDFAT directly
 
 Requirements:
-The SDFAT library must be installed. See http://code.google.com/p/sdfatlib/ 
+The SDFAT library must be installed via the Arduino library manager or https://github.com/greiman/SdFat
 The line #define SDFAT MUST be uncommented in pcmConfig.h
 
 "error: 'File' has not been declared" means you need to read the above text
