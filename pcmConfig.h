@@ -26,7 +26,7 @@ Blog: https://tmrh20.blogspot.com/
 
    Override the default size of the buffers (MAX 254). There are 2 buffers, so memory usage will be double this number
    Defaults to 64bytes for Uno etc. 254 for Mega etc. note: In multi mode there are 4 buffers*/
-//#define buffSize 128  //must be an even number
+#define buffSize 128  //must be an even number
 
   /* Uncomment to run the SD card at full speed (half speed is default for standard SD lib)*/
 #define SD_FULLSPEED
@@ -72,9 +72,9 @@ Blog: https://tmrh20.blogspot.com/
    Requires a class 4 card minimum, buffSize may need to be increased to 254 if audio is skipping etc.
    Depending on the card, can take a few seconds for recording to start
    																									*/
-//#define ENABLE_RECORDING
+#define ENABLE_RECORDING
 	// Amount of space to pre-allocate for recording
-//	#define BLOCK_COUNT 10000UL  // 10000 = 500MB   2000 = 100MB
+#define BLOCK_COUNT 10000UL  // 10000 = 500MB   2000 = 100MB
 
 //*********************** Radio (NRF24L01+) Streaming *********************
 
