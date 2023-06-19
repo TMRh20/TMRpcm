@@ -29,7 +29,7 @@ class TMRpcm
     //TMRpcm();
     //*** General Playback Functions and Vars ***
     #if !defined (ENABLE_MULTI)
-    void play(char* filename, unsigned long seekPoint=0);
+    void play(const char* filename, unsigned long seekPoint=0);
     void play(const __FlashStringHelper* FS, unsigned long seekPoint=0);
     #endif
     void stopPlayback();
@@ -44,22 +44,22 @@ class TMRpcm
     uint8_t CSPin;
 
     //*** Public vars used by RF library also ***
-    boolean wavInfo(char* filename);
+    boolean wavInfo(const char* filename );
     boolean rfPlaying;
     unsigned int SAMPLE_RATE;
 
     //*** Advanced usage Vars ***
-    byte listInfo(char* filename, char *tagData, byte infoNum);
-    byte id3Info(char* filename, char *tagData, byte infoNum);
-    byte getInfo(char* filename, char* tagData, byte infoNum);
+    byte listInfo(const char* filename, char *tagData, byte infoNum);
+    byte id3Info(const char* filename, char *tagData, byte infoNum);
+    byte getInfo(const char* filename, char* tagData, byte infoNum);
 
 
     #if defined (ENABLE_MULTI)//Normal Mode
     //*** MULTI MODE **
         void quality(boolean q, boolean q2);
         void play(const __FlashStringHelper* FS, boolean which=0);
-        void play(char* filename, boolean which=0);
-        void play(char* filename, unsigned long seekPoint, boolean which);
+        void play(const char* filename, boolean which=0);
+        void play(const char* filename, unsigned long seekPoint, boolean which);
         void play(const __FlashStringHelper* FS, unsigned long seekPoint, boolean which);
         boolean isPlaying(boolean which);
         void stopPlayback(boolean which);
@@ -72,14 +72,14 @@ class TMRpcm
     #endif
 
     //*** Recording WAV files ***
-    void createWavTemplate(char* filename,unsigned int sampleRate);
+    void createWavTemplate(const char* filename,unsigned int sampleRate);
     void createWavTemplate(const __FlashStringHelper* FS, unsigned int sampleRate);
-    void finalizeWavTemplate(char* filename);
+    void finalizeWavTemplate(const char* filename);
     void finalizeWavTemplate(const __FlashStringHelper* FS);
     #if defined (ENABLE_RECORDING)
-        void startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough=0);
+        void startRecording(const char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough=0);
         void startRecording(const __FlashStringHelper* FS, unsigned int SAMPLE_RATE, byte pin, byte passThrough=0);
-        void stopRecording(char *fileName);
+        void stopRecording(const char *fileName);
         void stopRecording(const __FlashStringHelper* FS);
     #endif
 
@@ -90,7 +90,7 @@ class TMRpcm
     unsigned long fPosition();
     unsigned int resolution;
     byte lastSpeakPin;
-    byte metaInfo(boolean infoType, char* filename, char* tagData, byte whichInfo);
+    byte metaInfo(boolean infoType, const char* filename, char* tagData, byte whichInfo);
     boolean seek(unsigned long pos);
     boolean ifOpen();
     unsigned int FSHlength(const __FlashStringHelper * FSHinput);
@@ -111,6 +111,3 @@ class TMRpcm
 };
 
 #endif
-
-
-

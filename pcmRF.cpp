@@ -76,7 +76,7 @@ void pcmRF::broadcast(byte device){
 	interrupts();
 }
 
-void pcmRF::play(char* filename, byte device){
+void pcmRF::play(const char* filename, byte device){
   stop();
   rfPlaying = 1;
 
