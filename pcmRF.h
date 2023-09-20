@@ -15,7 +15,7 @@
 	{
 	 public:
 	 	pcmRF( RF24& _radio);
-		void play(char* filename, byte device);
+		void play(const char* filename, byte device);
 		void broadcast(byte device);
 		boolean isPlaying();
 		void stop();
