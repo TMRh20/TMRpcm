@@ -1716,7 +1716,7 @@ void TMRpcm::startRecording(const __FlashStringHelper* FS, unsigned int sampleRa
 }
 
 
-void TMRpcm::startRecording(char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough){
+void TMRpcm::startRecording(const char *fileName, unsigned int SAMPLE_RATE, byte pin, byte passThrough){
 
     recording = passThrough + 1;
     setPin();
@@ -1811,7 +1811,7 @@ void TMRpcm::stopRecording(const __FlashStringHelper* FS){
     stopRecording(buffer);
 }
 
-void TMRpcm::stopRecording(char *fileName){
+void TMRpcm::stopRecording(const char *fileName){
 
     *TIMSK[tt] &= ~(_BV(OCIE1B) | _BV(OCIE1A));
     ADCSRA = 0;
