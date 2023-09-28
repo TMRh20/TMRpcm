@@ -207,7 +207,15 @@ byte tt;
 
 #if !defined (USE_TIMER2) //NOT using timer2
 void TMRpcm::timerSt(){
-    *ICRn[tt] = resolution;
+    #if defined (SPEED_CONTROL)
+       if(!speedPersist){
+    #endif
+         *ICRn[tt] = resolution;
+    #if defined (SPEED_CONTROL)
+       }else{
+         *ICRn[tt] = speedControlVar[tt];
+       }
+    #endif
     #if !defined (DISABLE_SPEAKER2)
         *TCCRnA[tt] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
     #else
@@ -215,7 +223,15 @@ void TMRpcm::timerSt(){
     #endif
     *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
   #if defined (MODE2)
-    *ICRn[tt2] = resolution;
+    #if defined (SPEED_CONTROL)
+       if(!speedPersist){
+    #endif
+         *ICRn[tt2] = resolution;
+    #if defined (SPEED_CONTROL)
+       }else{
+         *ICRn[tt2] = speedControlVar[tt2];
+       }
+    #endif
     *TCCRnA[tt2] = _BV(WGM11) | _BV(COM1A1) | _BV(COM1B0) | _BV(COM1B1); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
     *TCCRnB[tt2] = _BV(WGM13) | _BV(WGM12) | _BV(CS10);
   #endif
@@ -1562,15 +1578,21 @@ byte TMRpcm::metaInfo(boolean infoType, const char* filename, char* tagData, byt
 /*********************************************************************************
 ********************** Audio Playback Speed Control ******************************/
 #if defined SPEED_CONTROL
-void TMRpcm::speedUp(uint8_t amount, uint8_t timerNo){
+void TMRpcm::speedUp(uint8_t amount, bool persist, uint8_t timerNo){
+    speedPersist = persist;
     *ICRn[timerNo] = *ICRn[timerNo] - amount;
+    speedControlVar[timerNo] = *ICRn[timerNo];
 }
 
-void TMRpcm::speedDown(uint8_t amount, uint8_t timerNo){
+void TMRpcm::speedDown(uint8_t amount, bool persist, uint8_t timerNo){
+    speedPersist = persist;
     *ICRn[timerNo] = *ICRn[timerNo] + amount;
+    speedControlVar[timerNo] = *ICRn[timerNo];
 }
 
-void TMRpcm::setSpeed( uint32_t newSpeed, uint8_t timerNo){
+void TMRpcm::setSpeed( uint32_t newSpeed, bool persist, uint8_t timerNo){
+    speedPersist = persist;
+    speedControlVar[timerNo] = newSpeed;
     *ICRn[timerNo] = newSpeed;
 }
 
@@ -1782,7 +1804,15 @@ void TMRpcm::startRecording(const char *fileName, unsigned int SAMPLE_RATE, byte
         *TCCRnA[tt] = _BV(COM1A1); //Enable the timer port/pin as output for passthrough
 
     }
-    *ICRn[tt] = 10 * (RESOLUTION_BASE/SAMPLE_RATE);//Timer will count up to this value from 0;
+    #if defined (SPEED_CONTROL)
+      if(!speedPersist){
+    #endif
+        *ICRn[tt] = 10 * (RESOLUTION_BASE/SAMPLE_RATE);//Timer will count up to this value from 0;
+    #if defined (SPEED_CONTROL)
+      }else{
+        *ICRn[tt] = speedControlVar[tt];
+      }
+    #endif
     *TCCRnA[tt] |= _BV(WGM11); //WGM11,12,13 all set to 1 = fast PWM/w ICR TOP
     *TCCRnB[tt] = _BV(WGM13) | _BV(WGM12) | _BV(CS10); //CS10 = no prescaling
 

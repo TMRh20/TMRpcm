@@ -83,10 +83,12 @@ class TMRpcm
         void stopRecording(const __FlashStringHelper* FS);
     #endif
     #if defined (SPEED_CONTROL)
-        void speedUp(uint8_t amount = 1, uint8_t timerNo = 0);
-        void speedDown(uint8_t amount = 1, uint8_t timerNo = 0);
-        void setSpeed(uint32_t newSpeed, uint8_t timerNo = 0);
+        void speedUp(uint8_t amount = 1, bool persist = 0, uint8_t timerNo = 0);
+        void speedDown(uint8_t amount = 1, bool persist = 0, uint8_t timerNo = 0);
+        void setSpeed(uint32_t newSpeed, bool persist = 0, uint8_t timerNo = 0);
         uint32_t getSpeed(uint8_t timerNo = 0);
+        bool speedPersist;
+        uint16_t speedControlVar[4];
     #endif
     
  private:
