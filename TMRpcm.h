@@ -114,6 +114,11 @@ class TMRpcm
     #if defined (MODE2)
         void setPins();
     #endif
+    #if defined (ENABLE_RECORDING)
+      uint8_t adcsra;
+      uint8_t adcsrb;
+    #endif
+    
 };
 
 #endif
