@@ -1560,6 +1560,26 @@ byte TMRpcm::metaInfo(boolean infoType, const char* filename, char* tagData, byt
 
 
 /*********************************************************************************
+********************** Audio Playback Speed Control ******************************/
+#if defined SPEED_CONTROL
+void TMRpcm::speedUp(uint8_t amount, uint8_t timerNo){
+    *ICRn[timerNo] = *ICRn[timerNo] - amount;
+}
+
+void TMRpcm::speedDown(uint8_t amount, uint8_t timerNo){
+    *ICRn[timerNo] = *ICRn[timerNo] + amount;
+}
+
+void TMRpcm::setSpeed( uint32_t newSpeed, uint8_t timerNo){
+    *ICRn[timerNo] = newSpeed;
+}
+
+uint32_t TMRpcm::getSpeed(uint8_t timerNo){
+   return *ICRn[timerNo];   
+}
+#endif
+
+/*********************************************************************************
 ********************** DIY Digital Audio Generation ******************************/
 void TMRpcm::finalizeWavTemplate(const __FlashStringHelper* FS){
     const byte textLength = FSHlength(FS);
