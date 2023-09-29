@@ -119,6 +119,7 @@ class TMRpcm
     #if defined (ENABLE_RECORDING)
       uint8_t adcsra;
       uint8_t adcsrb;
+      uint8_t admux;
     #endif
     
 };

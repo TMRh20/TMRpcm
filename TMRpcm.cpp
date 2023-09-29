@@ -1742,6 +1742,7 @@ void TMRpcm::startRecording(const char *fileName, unsigned int SAMPLE_RATE, byte
 
     adcsra = ADCSRA;
     adcsrb = ADCSRB;
+    admux = ADMUX;
     recording = passThrough + 1;
     setPin();
     if(recording < 3){
@@ -1848,6 +1849,7 @@ void TMRpcm::stopRecording(const char *fileName){
     *TIMSK[tt] &= ~(_BV(OCIE1B) | _BV(OCIE1A));
     ADCSRA = adcsra;
     ADCSRB = adcsrb;
+    ADMUX = admux;
 
     if(recording == 1 || recording == 2){
         recording = 0;
