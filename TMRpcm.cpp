@@ -753,7 +753,7 @@ void TMRpcm::disable(){
                 *OCRnB[tt] = constrain((current - i),0,resolution);
                 *OCRnA[tt] = constrain((current - i),0,resolution);
             #endif
-            for(int i=0; i<10; i++){ while(*TCNT[tt] < resolution-50){} }
+            for(int i=0; i<10; i++){ while(*TCNT[tt] < (unsigned int)(resolution-50) ){} }
         }
     }
     bitSet(optionByte,5);
