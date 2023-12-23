@@ -96,7 +96,7 @@ class TMRpcm
     void setPin();
     void timerSt();
     unsigned long fPosition();
-    unsigned int resolution;
+    int resolution;
     byte lastSpeakPin;
     byte metaInfo(boolean infoType, const char* filename, char* tagData, byte whichInfo);
     boolean seek(unsigned long pos);

@@ -745,7 +745,7 @@ void TMRpcm::disable(){
     if(ifOpen()){ sFile.close();}
     if(bitRead(*TCCRnA[tt],7) > 0){
         int current = *OCRnA[tt];
-        for(unsigned int i=0; i < resolution; i++){
+        for(int i=0; i < resolution; i++){
             #if defined(rampMega)
                 *OCRnB[tt] = constrain((current + i),0,resolution);
                 *OCRnA[tt] = constrain((current - i),0,resolution);
