@@ -45,7 +45,7 @@ Blog: https://tmrh20.blogspot.com/
 /****************** ADVANCED USER DEFINES ********************************
    See https://github.com/TMRh20/TMRpcm/wiki for info on usage
 
-   /* Use the SDFAT library from https://github.com/greiman/SdFat          */
+   * Use the SDFAT library from https://github.com/greiman/SdFat          */
 //#define SDFAT
 
    /* MULTI Track mode currently allows playback of 2 tracks at once          */

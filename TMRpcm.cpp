@@ -165,7 +165,7 @@
 #endif
 
 //*********** Standard Global Variables ***************
-volatile unsigned int dataEnd;
+volatile int dataEnd;
 volatile boolean buffEmpty[2] = {true,true}, whichBuff = false, playing = 0, a, b;
 
 //*** Options/Indicators from MSb to LSb: paused, qual, rampUp, 2-byte samples, loop, loop2nd track, 16-bit ***
@@ -442,6 +442,7 @@ Prevents a whole lot more #if defined statements */
 
     boolean TMRpcm::ifOpen(){
         if(sFile){ return 1;}
+        return 0;
     }
 
 #else
@@ -744,7 +745,7 @@ void TMRpcm::disable(){
     if(ifOpen()){ sFile.close();}
     if(bitRead(*TCCRnA[tt],7) > 0){
         int current = *OCRnA[tt];
-        for(int i=0; i < resolution; i++){
+        for(unsigned int i=0; i < resolution; i++){
             #if defined(rampMega)
                 *OCRnB[tt] = constrain((current + i),0,resolution);
                 *OCRnA[tt] = constrain((current - i),0,resolution);
@@ -1332,7 +1333,6 @@ boolean TMRpcm::searchMainTags(File xFile, char *datStr){
 unsigned long TMRpcm::searchMainTags(SdFile xFile, char *datStr){
     xFile.seekSet(36);
 #endif
-        boolean found = 0;
         char dChars[4] = {'d','a','t','a'};
         char tmpChars[4];
 
@@ -1384,7 +1384,6 @@ unsigned long TMRpcm::searchMainTags(SdFile xFile, char *datStr){
             if(xFile.read() == datStr[0] && xFile.peek() == datStr[1]){
                 xFile.read((char*)tmpChars,3);
                 if( tmpChars[1] == datStr[2] &&  tmpChars[2] == datStr[3] ){
-                        found = 1;
                         #if !defined (SDFAT)
                             return 1; break;
                         #else
@@ -1530,10 +1529,8 @@ byte TMRpcm::metaInfo(boolean infoType, const char* filename, char* tagData, byt
             }else{
                 if(p==3){
                     if(infoType == 1){
-                        byte junk;
                         for(byte j=0; j<len; j++){
                             tagData[j] = xFile.read();
-                            junk=xFile.read();
                         }
                     }else{
                         xFile.read((char*)tagData,len);
@@ -1640,12 +1637,11 @@ void TMRpcm::finalizeWavTemplate(const char* filename){
 
 
 
-    seek(4); byte data[4] = {lowByte(fSize),highByte(fSize), fSize >> 16,fSize >> 24};
+    seek(4); byte data[4] = {lowByte(fSize),highByte(fSize), (byte)(fSize >> 16), (byte)(fSize >> 24)};
     sFile.write(data,4);
-    byte tmp;
     seek(40);
     fSize = fSize - 36;
-    data[0] = lowByte(fSize); data[1]=highByte(fSize);data[2]=fSize >> 16;data[3]=fSize >> 24;
+    data[0] = lowByte(fSize); data[1]=highByte(fSize); data[2]=(byte)(fSize >> 16); data[3]= (byte)(fSize >> 24);
     sFile.write((byte*)data,4);
     sFile.close();
 
@@ -1853,7 +1849,6 @@ void TMRpcm::stopRecording(const char *fileName){
 
     if(recording == 1 || recording == 2){
         recording = 0;
-        unsigned long position = fPosition();
         #if defined (SDFAT)
             sFile.truncate(position);
         #endif
