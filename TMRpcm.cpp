@@ -1850,7 +1850,7 @@ void TMRpcm::stopRecording(const char *fileName){
     if(recording == 1 || recording == 2){
         recording = 0;
         #if defined (SDFAT)
-            sFile.truncate(position);
+            sFile.truncate(fPosition());
         #endif
         sFile.close();
         finalizeWavTemplate(fileName);
