@@ -13,7 +13,7 @@ Contributors:
 #include <Arduino.h>
 #include <pcmConfig.h>
 #include <pcmRF.h>
-#if !defined (SDFAT)
+#if !defined (SD_FAT_VERSION)
     #include <SD.h>
 #else
     #include <SdFat.h>
