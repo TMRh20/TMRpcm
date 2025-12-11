@@ -1330,7 +1330,7 @@ byte TMRpcm::id3Info(const char* filename, char* tagData, byte infoNum){
 boolean TMRpcm::searchMainTags(File xFile, char *datStr){
     xFile.seek(36);
 #else
-unsigned long TMRpcm::searchMainTags(SdFile xFile, char *datStr){
+unsigned long TMRpcm::searchMainTags(SdFile &xFile, char *datStr){
     xFile.seekSet(36);
 #endif
         char dChars[4] = {'d','a','t','a'};

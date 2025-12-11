@@ -106,7 +106,7 @@ class TMRpcm
     #if !defined (SDFAT)
         boolean searchMainTags(File xFile, char *datStr);
     #else
-        unsigned long searchMainTags(SdFile xFile, char *datStr);
+        unsigned long searchMainTags(SdFile &xFile, char *datStr);
     #endif
 
     #if defined (ENABLE_MULTI)
